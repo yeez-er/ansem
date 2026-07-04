@@ -24,6 +24,7 @@ Make the structural change directly. Keep changes to 1-2 files maximum per itera
 - **Extract pure functions** — calculation/mapping logic → pure exported functions
 
 Rules:
+
 - **No behavior changes.** The app must do exactly what it did before.
 - **If a test breaks, revert and try a different approach.** Don't fix the test — that's a behavior change.
 

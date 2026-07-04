@@ -13,16 +13,19 @@ Public tRPC read surface: ranked boards (daily / all-time, per-platform or combi
 ## Procedures (`leaderboard` router)
 
 ### `leaderboard.get`
+
 - Input: `{ period: z.enum(['daily','alltime']), platform: z.enum(['x','tiktok','instagram','all']).default('all'), cursor: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(100).default(25) }`
 - Daily: per spec 006 semantics — baseline = newest snapshot before `dayWindow(now).start`, latest = newest within window, per-post delta score, summed per creator. Implemented as one SQL query (`DISTINCT ON` / lateral joins), NOT a per-creator N+1 loop; **bound the scan**: consider only posts with `latest_snapshot_at >= window.start − 2d`.
 - All-time: sum `computeScore(latest_*)` per creator from denormalized columns (this is the reader that justifies them).
 - Returns `{ entries: RankedEntry[], nextCursor: number | null, window: { start, end } | null }` where `RankedEntry = { rank, creator: PublicCreator, score, views, likes, comments, shares, postCount }` (all counts serialized as strings — bigint doesn't survive JSON). Empty board ⇒ `entries: []` with `nextCursor: null` (a list is a list; the null-not-`{}` rule applies to single-entity lookups).
 
 ### `leaderboard.creator`
+
 - Input: `{ creatorId: z.string().uuid() }`
 - Returns `{ creator: PublicCreator, alltime: ScoreSummary, daily: ScoreSummary, posts: PublicPost[] }` — posts capped at 50, newest first, `PublicPost = { id, url, caption, postedAt, views, likes, comments, shares, score }` (strings for counts). Unknown id or banned creator → **`null`** (not `{}`, not a throw).
 
 ### `leaderboard.recentPosts`
+
 - Input: `{ limit: z.number().int().min(1).max(50).default(12) }`
 - Latest approved posts across platforms for the home-page ticker. Returns `PublicPost & { creator: PublicCreator }` array.
 
@@ -32,14 +35,14 @@ Each procedure result is cached 60s (per input key) via Next.js `'use cache'` / 
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/server/api/routers/leaderboard/get.ts` | CREATE |
-| `src/server/api/routers/leaderboard/creator.ts` | CREATE |
-| `src/server/api/routers/leaderboard/recent-posts.ts` | CREATE |
-| `src/server/api/routers/leaderboard/index.ts` | CREATE — register |
-| `src/server/api/root.ts` | MODIFY — register router |
-| `src/server/db/queries/leaderboard.ts` | CREATE — the SQL, separated for integration tests |
+| File                                                 | Action                                            |
+| ---------------------------------------------------- | ------------------------------------------------- |
+| `src/server/api/routers/leaderboard/get.ts`          | CREATE                                            |
+| `src/server/api/routers/leaderboard/creator.ts`      | CREATE                                            |
+| `src/server/api/routers/leaderboard/recent-posts.ts` | CREATE                                            |
+| `src/server/api/routers/leaderboard/index.ts`        | CREATE — register                                 |
+| `src/server/api/root.ts`                             | MODIFY — register router                          |
+| `src/server/db/queries/leaderboard.ts`               | CREATE — the SQL, separated for integration tests |
 
 ## Acceptance Criteria
 

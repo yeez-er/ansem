@@ -20,6 +20,7 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 ## Pages (App Router)
 
 ### `/` — the board
+
 - Header: brand, nav (`Leaderboard`, `Submit`, Clerk sign-in button)
 - Controls row: period toggle (**Today** default / **All Time**) + platform filter tabs (All / X / TikTok / Instagram). Both are URL state (`?period=daily&platform=all`) — shareable, back-button-safe. Small caption under the toggle: "resets 00:00 UTC" with a live countdown.
 - Board table: rank, creator (avatar, handle, platform badge), score, views, likes, comments, shares, posts count. Row click → creator page. "Load more" pagination via `nextCursor`.
@@ -27,9 +28,11 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 - **Empty state**: bull glyph + "No posts on the board yet. Be the first — submit your post." + CTA to `/submit`. **Error state**: friendly retry card, never a raw error string.
 
 ### `/creator/[id]`
+
 - Creator header (avatar, handle, platform badge, link to profile at source), stat tiles (all-time score, today's score, total views, posts), posts table (each row links out to the source post). Unknown/banned id → `notFound()` → styled 404.
 
 ### `/submit`
+
 - Signed-out: Clerk sign-in gate with copy "Sign in to submit posts."
 - Signed-in: single URL input + platform auto-detect chip (renders as soon as the pasted URL parses, via the SAME `parsePostUrl` from spec 002 — never a duplicated client copy), submit button with in-flight disable (no double submit).
 - Mutation handles BOTH callbacks: `onSuccess` → success toast "On the board — metrics update within the hour" (or "Pending review" when moderation is on) + input cleared; `onError` → mapped message per error code (`UNSUPPORTED_URL`, `TOO_MANY_REQUESTS`, `CREATOR_BANNED`, generic fallback). Toast text must match reality — no success toast on a no-op.
@@ -42,13 +45,13 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/app/(public)/page.tsx` + `leaderboard-table.tsx`, `board-controls.tsx`, `recent-posts.tsx` | CREATE |
-| `src/app/(public)/creator/[id]/page.tsx` | CREATE |
-| `src/app/(public)/submit/page.tsx` + `submit-form.tsx` | CREATE |
-| `src/app/layout.tsx`, `src/app/globals.css` | MODIFY — theme, header, fonts |
-| `src/components/` shared: `platform-badge.tsx`, `stat-number.tsx`, `empty-state.tsx` | CREATE |
+| File                                                                                            | Action                        |
+| ----------------------------------------------------------------------------------------------- | ----------------------------- |
+| `src/app/(public)/page.tsx` + `leaderboard-table.tsx`, `board-controls.tsx`, `recent-posts.tsx` | CREATE                        |
+| `src/app/(public)/creator/[id]/page.tsx`                                                        | CREATE                        |
+| `src/app/(public)/submit/page.tsx` + `submit-form.tsx`                                          | CREATE                        |
+| `src/app/layout.tsx`, `src/app/globals.css`                                                     | MODIFY — theme, header, fonts |
+| `src/components/` shared: `platform-badge.tsx`, `stat-number.tsx`, `empty-state.tsx`            | CREATE                        |
 
 ## Acceptance Criteria
 
@@ -62,15 +65,18 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 - [ ] Creator page for unknown id returns the styled 404 (not empty page, not 500)
 
 ### Visual verify
+
 Route: `/`
 Precondition: seed data loaded (spec 010), no auth.
 Walkthrough:
+
 1. Navigate to `/` → verify header shows "$ANSEM" brand and nav links `Leaderboard`, `Submit`
 2. Verify board table renders ≥ 10 rows; row 1 has gold/rank-1 gradient treatment and a platform badge
 3. Click "All Time" toggle → verify URL contains `period=alltime` and top row may change (board re-renders)
 4. Click platform tab "TikTok" → verify all visible rows show the TikTok badge
 5. Click row 1 creator → verify navigation to `/creator/[id]` with stat tiles and posts table
 6. Navigate to `/submit` signed out → verify sign-in gate copy appears
-Edge cases:
+   Edge cases:
+
 - Empty board (fresh DB, no seed): bull-glyph empty state with submit CTA
 - API failure: retry card, no raw error text

@@ -17,12 +17,12 @@ score = views·W.views + likes·W.likes + comments·W.comments + shares·W.share
 
 Default weights (exported constant `DEFAULT_WEIGHTS`, single source of truth):
 
-| Metric | Weight | Rationale |
-|--------|--------|-----------|
-| views | 1 | base unit — reach |
-| likes | 30 | scarcer than views by ~2 orders of magnitude |
-| comments | 60 | active engagement |
-| shares | 90 | distribution — the campaign's actual goal |
+| Metric   | Weight | Rationale                                    |
+| -------- | ------ | -------------------------------------------- |
+| views    | 1      | base unit — reach                            |
+| likes    | 30     | scarcer than views by ~2 orders of magnitude |
+| comments | 60     | active engagement                            |
+| shares   | 90     | distribution — the campaign's actual goal    |
 
 ⚠️ ASSUMPTION (owner: Yasser): weights are my proposal — tune freely; they live in ONE exported constant and everything derives from it. No per-platform weight table in v1 (a view is a view); revisit post-launch with real data.
 
@@ -37,9 +37,9 @@ Daily leaderboard semantics (implemented by spec 007's queries, defined here): a
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/lib/scoring.ts` | CREATE |
+| File                      | Action |
+| ------------------------- | ------ |
+| `src/lib/scoring.ts`      | CREATE |
 | `src/lib/scoring.test.ts` | CREATE |
 
 ## Acceptance Criteria

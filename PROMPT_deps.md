@@ -17,9 +17,11 @@ Check which package manager the project uses:
 4. `bun.lockb` or `bun.lock` → bun
 
 If none found, write to stdout:
+
 ```
 No lock file found. Cannot determine package manager.
 ```
+
 Then exit immediately.
 
 ---
@@ -28,20 +30,22 @@ Then exit immediately.
 
 Run the appropriate audit command:
 
-| Package Manager | Audit Command |
-|----------------|---------------|
-| npm | `npm audit --json` |
-| pnpm | `pnpm audit --json` |
-| yarn | `yarn audit --json` |
-| bun | `bun audit` |
+| Package Manager | Audit Command       |
+| --------------- | ------------------- |
+| npm             | `npm audit --json`  |
+| pnpm            | `pnpm audit --json` |
+| yarn            | `yarn audit --json` |
+| bun             | `bun audit`         |
 
 Capture the full output. Parse the JSON to extract:
+
 - **Critical** vulnerabilities (CVE with CVSS >= 9.0)
 - **High** vulnerabilities (CVE with CVSS >= 7.0)
 - **Moderate** vulnerabilities (CVE with CVSS >= 4.0)
 - **Low** vulnerabilities (CVE with CVSS < 4.0)
 
 For each vulnerability, note:
+
 - Package name and version
 - CVE identifier (if available)
 - Severity level
@@ -54,14 +58,15 @@ For each vulnerability, note:
 
 Run the appropriate outdated command:
 
-| Package Manager | Outdated Command |
-|----------------|-----------------|
-| npm | `npm outdated --json` |
-| pnpm | `pnpm outdated --json` |
-| yarn | `yarn outdated --json` |
-| bun | `bun outdated` |
+| Package Manager | Outdated Command       |
+| --------------- | ---------------------- |
+| npm             | `npm outdated --json`  |
+| pnpm            | `pnpm outdated --json` |
+| yarn            | `yarn outdated --json` |
+| bun             | `bun outdated`         |
 
 Identify:
+
 - **Major version bumps** (e.g., 3.x → 4.x) — these may have breaking changes
 - **Minor version bumps** (e.g., 3.1 → 3.2) — usually safe
 - **Patch version bumps** (e.g., 3.1.1 → 3.1.2) — safe, should update
@@ -71,6 +76,7 @@ Identify:
 ## Phase 4: License Check
 
 Scan `package.json` dependencies and their licenses:
+
 - Flag any **copyleft** licenses (GPL, AGPL) in production dependencies
 - Flag any **unknown** or **missing** licenses
 - Note any license compatibility concerns
@@ -83,27 +89,34 @@ Write `DEPS_REPORT.md` in the project root:
 
 ```markdown
 ## Dependency Audit Report
+
 ## Date: YYYY-MM-DD
+
 ## Package Manager: [npm|pnpm|yarn|bun]
 
 ## Critical/High CVEs (Must Fix)
-| Package | Version | CVE | Severity | Fix Available |
-|---------|---------|-----|----------|--------------|
-| [name]  | [ver]   | [id]| critical | yes/no       |
+
+| Package | Version | CVE  | Severity | Fix Available |
+| ------- | ------- | ---- | -------- | ------------- |
+| [name]  | [ver]   | [id] | critical | yes/no        |
 
 ## Moderate CVEs (Should Fix)
+
 | Package | Version | CVE | Severity | Fix Available |
-|---------|---------|-----|----------|--------------|
+| ------- | ------- | --- | -------- | ------------- |
 
 ## Major Outdated Packages (Informational)
-| Package | Current | Latest | Type |
-|---------|---------|--------|------|
-| [name]  | [cur]   | [lat]  | major|
+
+| Package | Current | Latest | Type  |
+| ------- | ------- | ------ | ----- |
+| [name]  | [cur]   | [lat]  | major |
 
 ## License Concerns
+
 - [any flagged licenses]
 
 ## Recommended Actions
+
 1. [prioritized list of what to do]
 2. [...]
 ```

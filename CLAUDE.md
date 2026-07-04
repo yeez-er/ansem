@@ -79,17 +79,17 @@
 
 <!-- Fill this in during Phase 1 Discovery based on your framework -->
 
-| Task Type | Test Approach | Notes |
-|-----------|--------------|-------|
-| Pure functions | Unit tests (standard) | |
-| API procedures | Integration tests (mock DB) | |
-| DB operations | Integration tests (`@vitest-environment node`) | |
-| UI components (pure) | Component render tests | |
-| UI pages (framework) | Source verification + Playwright e2e | Next.js App Router pages/server components can't render in jsdom — assert structure in source, behavior in e2e |
-| Cron routes | Integration tests on the extracted orchestration fn | Route handler stays thin (specs 004/005) |
-| Concurrency/atomicity | Distinct-transaction-client tests against a real DB | Mocked unit tests structurally cannot catch races |
-| Schema structure | Dual-layer (runtime assertions + source verification) | |
-| Sweeping refactors | Parameterized `it.each` source tests | |
+| Task Type             | Test Approach                                         | Notes                                                                                                          |
+| --------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Pure functions        | Unit tests (standard)                                 |                                                                                                                |
+| API procedures        | Integration tests (mock DB)                           |                                                                                                                |
+| DB operations         | Integration tests (`@vitest-environment node`)        |                                                                                                                |
+| UI components (pure)  | Component render tests                                |                                                                                                                |
+| UI pages (framework)  | Source verification + Playwright e2e                  | Next.js App Router pages/server components can't render in jsdom — assert structure in source, behavior in e2e |
+| Cron routes           | Integration tests on the extracted orchestration fn   | Route handler stays thin (specs 004/005)                                                                       |
+| Concurrency/atomicity | Distinct-transaction-client tests against a real DB   | Mocked unit tests structurally cannot catch races                                                              |
+| Schema structure      | Dual-layer (runtime assertions + source verification) |                                                                                                                |
+| Sweeping refactors    | Parameterized `it.each` source tests                  |                                                                                                                |
 
 ---
 

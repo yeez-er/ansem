@@ -27,12 +27,12 @@ Counts are double-checked: after seeding, the script queries `leaderboard`'s que
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/server/db/seed.ts` | CREATE |
+| File                         | Action                                                       |
+| ---------------------------- | ------------------------------------------------------------ |
+| `src/server/db/seed.ts`      | CREATE                                                       |
 | `src/server/db/seed-data.ts` | CREATE — the fixture definitions (pure data + curve builder) |
-| `package.json` | MODIFY — `db:seed` script |
-| `ralph/AGENTS.md` | MODIFY — fill Seed Data command |
+| `package.json`               | MODIFY — `db:seed` script                                    |
+| `ralph/AGENTS.md`            | MODIFY — fill Seed Data command                              |
 
 ## Acceptance Criteria
 

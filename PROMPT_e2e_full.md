@@ -17,10 +17,12 @@ Read these files:
 5. **Specs** — Read relevant spec files for the batch's domain.
 
 If no `pending` items remain in the Priority Queue:
+
 - Write "ALL BATCHES COMPLETE" to stdout
 - Exit immediately — do not generate anything
 
 Record:
+
 - **Batch name** from the queue
 - **Target spec file** path
 - **Matrix cells** this batch must cover
@@ -42,6 +44,7 @@ Generate exactly **1 spec file** with 5-15 tests covering the matrix cells ident
 ### Page Object Pattern
 
 Every page/screen referenced in the tests MUST have a Page Object class (reuse existing ones):
+
 - Encapsulates all selectors (prefer `data-testid`, fall back to accessible roles/labels)
 - Exposes action methods (`fillForm()`, `submit()`, `navigateTo()`)
 - Exposes assertion methods (`expectError()`, `expectRowCount()`)
@@ -51,10 +54,11 @@ Every page/screen referenced in the tests MUST have a Page Object class (reuse e
 ### Test Writing Standards
 
 Test names must read as **user-centric statements**:
+
 ```typescript
-describe('[Journey] Entity Management', () => {
-  describe('Create Flow', () => {
-    it('allows an admin to create a new entity with valid data', () => {});
+describe("[Journey] Entity Management", () => {
+  describe("Create Flow", () => {
+    it("allows an admin to create a new entity with valid data", () => {});
   });
 });
 ```
@@ -75,65 +79,66 @@ These patterns produce tests that silently pass when features are broken:
 ```typescript
 // ❌ BANNED: Optional assertion — silently skips if element never appears
 if (await element.isVisible({ timeout: 5_000 }).catch(() => false)) {
-  await expect(element).toHaveText('...');
+  await expect(element).toHaveText("...");
 }
 // Test passes whether the feature works or not.
 
 // ✅ REQUIRED: Unconditional assertion — fails if element doesn't appear
 await expect(element).toBeVisible();
-await expect(element).toHaveText('...');
+await expect(element).toHaveText("...");
 ```
 
 ```typescript
 // ❌ BANNED: Visibility-only check for a mutation
 await submitButton.click();
-await expect(successToast).toBeVisible();  // Only checks toast appeared
+await expect(successToast).toBeVisible(); // Only checks toast appeared
 
 // ✅ REQUIRED: Verify the mutation actually happened
 await submitButton.click();
 await expect(successToast).toBeVisible();
-await page.goto('/entities');
-await expect(page.getByText('New Entity Name')).toBeVisible();  // Data persisted
+await page.goto("/entities");
+await expect(page.getByText("New Entity Name")).toBeVisible(); // Data persisted
 ```
 
 ```typescript
 // ❌ BANNED: "Page loads" as the only assertion
-test('dashboard page', async ({ page }) => {
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL('/dashboard');
+test("dashboard page", async ({ page }) => {
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL("/dashboard");
 });
 // This tests the router, not the feature.
 
 // ✅ REQUIRED: Test actual page functionality
-test('dashboard shows real KPI values', async ({ page }) => {
-  await page.goto('/dashboard');
-  const revenue = page.getByTestId('revenue-kpi');
+test("dashboard shows real KPI values", async ({ page }) => {
+  await page.goto("/dashboard");
+  const revenue = page.getByTestId("revenue-kpi");
   await expect(revenue).toBeVisible();
-  await expect(revenue).not.toHaveText('$0');
+  await expect(revenue).not.toHaveText("$0");
 });
 ```
 
 **Rules:**
+
 1. Every `if/try-catch` that guards an assertion is a bug in the test. Assertions must be unconditional.
 2. Every form submission test must verify the mutation persisted (navigate away, come back, check data).
-3. Every button/action test must verify the *outcome*, not just that the button is clickable.
+3. Every button/action test must verify the _outcome_, not just that the button is clickable.
 4. Every status transition test must verify the entity's state actually changed.
 5. "Element is visible" is NEVER sufficient as the sole assertion for a feature test.
 6. **NEVER** use `sleep()`, `wait(ms)`, or arbitrary timeouts.
 
 ### Assertion Depth Requirements
 
-| Test Type | Minimum Assertion Depth |
-|-----------|------------------------|
-| Page load | Page renders + key data is populated (not empty/zero/NaN) |
-| Form submit | Fill → submit → verify success → navigate to list → verify new entry exists |
-| Edit/Update | Load existing → modify → submit → verify changes on detail AND list pages |
-| Delete | Trigger → confirm dialog → verify removed from list → verify detail 404s/redirects |
-| Status transition | Trigger → verify new status badge → verify correct filtered view |
-| Dialog confirm | Open → fill → confirm → verify side effect (not just "dialog closed") |
-| Dialog cancel | Open → cancel → verify NO side effect occurred |
-| Settings save | Change → save → refresh → verify persisted |
-| Filter/sort | Apply → verify count changed → verify visible items match criteria |
+| Test Type         | Minimum Assertion Depth                                                            |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| Page load         | Page renders + key data is populated (not empty/zero/NaN)                          |
+| Form submit       | Fill → submit → verify success → navigate to list → verify new entry exists        |
+| Edit/Update       | Load existing → modify → submit → verify changes on detail AND list pages          |
+| Delete            | Trigger → confirm dialog → verify removed from list → verify detail 404s/redirects |
+| Status transition | Trigger → verify new status badge → verify correct filtered view                   |
+| Dialog confirm    | Open → fill → confirm → verify side effect (not just "dialog closed")              |
+| Dialog cancel     | Open → cancel → verify NO side effect occurred                                     |
+| Settings save     | Change → save → refresh → verify persisted                                         |
+| Filter/sort       | Apply → verify count changed → verify visible items match criteria                 |
 
 ---
 
@@ -148,6 +153,7 @@ npx playwright test [path-to-new-spec-file] --reporter=list 2>&1
 If the project uses a different test runner (from `ralph/AGENTS.md`), use that instead.
 
 Capture:
+
 - Full test output
 - Exit code
 - Screenshot paths from `e2e/test-results/` (if failures)
@@ -179,6 +185,7 @@ npx playwright test [path-to-new-spec-file] --reporter=list 2>&1
 ```
 
 Record results. If still failing after fixes:
+
 - Write failure details to `E2E_FAILURES.md` with verdict `NEEDS_FIXES` (the loop will invoke `PROMPT_e2e_fix.md`)
 - Continue to Phase 5 anyway (partial coverage is still progress)
 
@@ -213,9 +220,9 @@ Update the Coverage Summary table with new counts and percentages.
 
 Add a row to Section 4:
 
-| Iteration | Batch | Tests Generated | Tests Passed | Tests Fixed | Cells Covered | Overall % |
-|-----------|-------|-----------------|--------------|-------------|---------------|-----------|
-| [N] | [batch name] | [N] | [N] | [N] | [N] | [N]% |
+| Iteration | Batch        | Tests Generated | Tests Passed | Tests Fixed | Cells Covered | Overall % |
+| --------- | ------------ | --------------- | ------------ | ----------- | ------------- | --------- |
+| [N]       | [batch name] | [N]             | [N]          | [N]         | [N]           | [N]%      |
 
 ---
 

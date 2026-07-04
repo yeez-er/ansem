@@ -13,7 +13,7 @@ You are running Playwright E2E tests and capturing structured failure data. Your
 2. Verify `playwright.config.ts` exists in the project root.
 3. Verify `@playwright/test` is installed (check `node_modules/@playwright/test`).
 4. Read `notes/e2e-analysis.md` (if exists) for context on what was generated and why — this contains the route inventory, component inventory, form inventory, API map, and cross-page flow map produced by the E2E generator.
-4. If any prerequisite is missing, write to `E2E_FAILURES.md`:
+5. If any prerequisite is missing, write to `E2E_FAILURES.md`:
    ```
    ## Verdict: NEEDS_FIXES
    ## Prerequisites Missing
@@ -33,15 +33,18 @@ npx playwright test --reporter=list 2>&1
 ```
 
 Capture:
+
 - The full test output (stdout + stderr)
 - The exit code
 - Screenshot paths from `e2e/test-results/` (if failures occurred)
 
 If all tests pass, write to `E2E_FAILURES.md`:
+
 ```
 ## Verdict: PASS
 All E2E tests passed.
 ```
+
 Then exit.
 
 ---
@@ -68,6 +71,7 @@ Write structured failure data to `E2E_FAILURES.md` in the project root:
 ## Verdict: NEEDS_FIXES
 
 ## Summary
+
 - Total tests: [N]
 - Passed: [N]
 - Failed: [N]
@@ -76,21 +80,27 @@ Write structured failure data to `E2E_FAILURES.md` in the project root:
 ## Failures
 
 ### Failure 1: [full test name]
+
 - **Screenshot:** e2e/test-results/[path]/screenshot.png
 - **Error:** [error message]
 - **Stack trace:**
-  ```
-  [relevant stack trace lines]
-  ```
+```
+
+[relevant stack trace lines]
+
+````
 - **Failing test code:**
-  ```typescript
-  [the test block that failed]
-  ```
+```typescript
+[the test block that failed]
+````
+
 - **Likely source file:** src/app/page.tsx
 - **Likely issue:** [one-sentence analysis]
 
 ### Failure 2: [full test name]
+
 ...
+
 ```
 
 Rules:
@@ -100,3 +110,4 @@ Rules:
 - The "likely issue" should be actionable — what the fixer should look at
 
 Exit after writing E2E_FAILURES.md. Do NOT fix anything.
+```

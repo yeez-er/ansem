@@ -17,13 +17,15 @@ If the app requires login (Clerk, NextAuth, etc.), the Playwright script must au
 
 ```typescript
 // Clerk dev mode: use Clerk test login
-await page.goto('http://localhost:<port>/sign-in');
-await page.getByLabel('Email address').fill(process.env.TEST_EMAIL || 'test@example.com');
-await page.getByRole('button', { name: /continue/i }).click();
+await page.goto("http://localhost:<port>/sign-in");
+await page
+  .getByLabel("Email address")
+  .fill(process.env.TEST_EMAIL || "test@example.com");
+await page.getByRole("button", { name: /continue/i }).click();
 // For Clerk dev mode with code verification:
-await page.getByLabel('Code').fill('424242'); // Clerk test code
-await page.getByRole('button', { name: /verify/i }).click();
-await page.waitForURL('**/vendor-dashboard/**');
+await page.getByLabel("Code").fill("424242"); // Clerk test code
+await page.getByRole("button", { name: /verify/i }).click();
+await page.waitForURL("**/vendor-dashboard/**");
 ```
 
 If no test credentials exist, read `.env.local` for `CLERK_SECRET_KEY` or similar. If auth cannot be bypassed, screenshot the login page and report: "Auth wall — need test credentials in AGENTS.md".
@@ -45,27 +47,36 @@ For each `### Visual verify` workflow in IMPLEMENTATION_PLAN.md, write a tempora
 
 ```typescript
 // /tmp/visual-verify-W1.ts
-import { chromium } from 'playwright';
+import { chromium } from "playwright";
 
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
   // Step 1: Navigate to meals page
-  await page.goto('http://localhost:3000/meals');
-  await page.waitForLoadState('networkidle');
-  await page.screenshot({ path: '/tmp/vv-W1-step1-meals-list.png', fullPage: true });
+  await page.goto("http://localhost:3000/meals");
+  await page.waitForLoadState("networkidle");
+  await page.screenshot({
+    path: "/tmp/vv-W1-step1-meals-list.png",
+    fullPage: true,
+  });
 
   // Step 2: Click "Create Meal" button
-  await page.getByRole('button', { name: /create/i }).click();
-  await page.waitForLoadState('networkidle');
-  await page.screenshot({ path: '/tmp/vv-W1-step2-create-form.png', fullPage: true });
+  await page.getByRole("button", { name: /create/i }).click();
+  await page.waitForLoadState("networkidle");
+  await page.screenshot({
+    path: "/tmp/vv-W1-step2-create-form.png",
+    fullPage: true,
+  });
 
   // Step 3: Fill the form
-  await page.getByLabel(/name/i).fill('Test Meal Plan');
-  await page.getByRole('button', { name: /save/i }).click();
-  await page.waitForLoadState('networkidle');
-  await page.screenshot({ path: '/tmp/vv-W1-step3-after-save.png', fullPage: true });
+  await page.getByLabel(/name/i).fill("Test Meal Plan");
+  await page.getByRole("button", { name: /save/i }).click();
+  await page.waitForLoadState("networkidle");
+  await page.screenshot({
+    path: "/tmp/vv-W1-step3-after-save.png",
+    fullPage: true,
+  });
 
   // Step 4: Verify redirect to detail page
   const url = page.url();
@@ -77,11 +88,13 @@ import { chromium } from 'playwright';
 ```
 
 Run it:
+
 ```bash
 npx tsx /tmp/visual-verify-W1.ts 2>&1
 ```
 
 **Key rules for writing walkthrough scripts:**
+
 - Use accessible selectors: `getByRole`, `getByLabel`, `getByText` — NEVER `page.locator('.css-class')` or `data-testid`
 - Take a screenshot AFTER each significant action (page load, form fill, button click, modal open)
 - Log RESULT lines for key assertions (redirect URL, visible text, element counts)
@@ -94,6 +107,7 @@ npx tsx /tmp/visual-verify-W1.ts 2>&1
 ## Step 4: Analyze screenshots
 
 Read each screenshot with the Read tool (you are multimodal). For each step:
+
 - Did the expected UI appear?
 - Did the action produce the expected result? (redirect, toast, modal, data in table)
 - Are there error messages, blank states, or spinners stuck?
@@ -101,6 +115,7 @@ Read each screenshot with the Read tool (you are multimodal). For each step:
 ## Step 5: Fix and re-verify
 
 If a workflow fails:
+
 1. Identify whether it's an app bug or a stale selector
 2. Fix the APPLICATION code (not the throwaway test script)
 3. Re-run the walkthrough script to confirm the fix

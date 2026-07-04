@@ -17,12 +17,12 @@ Clerk authentication for submitters, and an admin surface to keep the board hone
 
 ## tRPC Procedures (`admin` router — all `adminProcedure`)
 
-| Procedure | Input (zod) | Behavior |
-|-----------|-------------|----------|
-| `admin.pendingPosts` | `{ cursor?, limit: max 100 default 25 }` | pending posts, oldest first, with creator + submitter id |
-| `admin.reviewPost` | `{ postId: uuid, action: z.enum(['approve','reject']) }` | pending → approved/rejected. Non-pending post → `PRECONDITION_FAILED` (no silent re-review) |
-| `admin.banCreator` | `{ creatorId: uuid, banned: z.boolean() }` | sets `is_banned`; when banning also bulk-rejects that creator's `pending` posts in the SAME transaction |
-| `admin.refreshPost` | `{ postId: uuid }` | immediate single-post refresh via spec 003 provider; returns the new snapshot or the typed provider error |
+| Procedure            | Input (zod)                                              | Behavior                                                                                                  |
+| -------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `admin.pendingPosts` | `{ cursor?, limit: max 100 default 25 }`                 | pending posts, oldest first, with creator + submitter id                                                  |
+| `admin.reviewPost`   | `{ postId: uuid, action: z.enum(['approve','reject']) }` | pending → approved/rejected. Non-pending post → `PRECONDITION_FAILED` (no silent re-review)               |
+| `admin.banCreator`   | `{ creatorId: uuid, banned: z.boolean() }`               | sets `is_banned`; when banning also bulk-rejects that creator's `pending` posts in the SAME transaction   |
+| `admin.refreshPost`  | `{ postId: uuid }`                                       | immediate single-post refresh via spec 003 provider; returns the new snapshot or the typed provider error |
 
 Every mutation returns the updated entity (client invalidates queries). Every admin mutation `console.info`s one structured audit line `{ actor: userId, action, target }` — a real audit table is a non-goal for v1, logged in KNOWN_ISSUES as accepted debt.
 
@@ -34,14 +34,14 @@ Every mutation returns the updated entity (client invalidates queries). Every ad
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/middleware.ts` (or `proxy.ts` per Next version) | CREATE — Clerk |
-| `src/server/api/trpc.ts` | MODIFY — context + `protectedProcedure` + `adminProcedure` |
-| `src/server/api/routers/admin/{pending-posts,review-post,ban-creator,refresh-post}.ts` | CREATE |
-| `src/server/api/routers/admin/index.ts` + `root.ts` | CREATE/MODIFY — register |
-| `src/app/admin/layout.tsx`, `src/app/admin/page.tsx`, `src/app/admin/creators/page.tsx` | CREATE |
-| `.env.example` | MODIFY — Clerk keys, `ADMIN_USER_IDS` |
+| File                                                                                    | Action                                                     |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `src/middleware.ts` (or `proxy.ts` per Next version)                                    | CREATE — Clerk                                             |
+| `src/server/api/trpc.ts`                                                                | MODIFY — context + `protectedProcedure` + `adminProcedure` |
+| `src/server/api/routers/admin/{pending-posts,review-post,ban-creator,refresh-post}.ts`  | CREATE                                                     |
+| `src/server/api/routers/admin/index.ts` + `root.ts`                                     | CREATE/MODIFY — register                                   |
+| `src/app/admin/layout.tsx`, `src/app/admin/page.tsx`, `src/app/admin/creators/page.tsx` | CREATE                                                     |
+| `.env.example`                                                                          | MODIFY — Clerk keys, `ADMIN_USER_IDS`                      |
 
 ## Acceptance Criteria
 
@@ -54,13 +54,16 @@ Every mutation returns the updated entity (client invalidates queries). Every ad
 - [ ] Server-side route guard: e2e as non-admin hits `/admin` → 404 content, and the page source contains no pending-queue data
 
 ### Visual verify
+
 Route: `/admin`
 Precondition: seeded pending posts; signed in as the seeded admin user.
 Walkthrough:
+
 1. Navigate to `/admin` → verify `Pending` tab with a table of ≥ 3 rows, each with platform badge and Approve/Reject
 2. Click `Approve` on row 1 → verify row leaves the queue and a success toast appears (wait for the toast, not a timeout)
 3. Open `Creators` tab → search the seeded banned creator → verify `Unban` button state
 4. Click `Ban` on an active creator → confirm dialog → verify toast and badge flips to banned
-Edge cases:
+   Edge cases:
+
 - Empty pending queue: "Queue clear" empty state
 - Signed in as non-admin: `/admin` renders the 404 page

@@ -3,6 +3,7 @@
 You are implementing fixes specified by the Codex hardening reviewer. Read `HARDEN_SPEC.md` and implement each finding exactly as described.
 
 **Rules:**
+
 - No interpretation, no "improvements," no extras beyond what the spec says
 - Implement fixes in order of severity (critical first, then high)
 - Only implement `critical` and `high` severity findings — skip `medium` and `low`
@@ -41,6 +42,7 @@ Run the full validation chain. Look in `ralph/AGENTS.md` for exact commands. At 
 3. `npm run build` — build succeeds
 
 If validation fails:
+
 - Fix only what's needed to make the new tests/code work
 - Do NOT change the intent of the hardening fix
 - If you cannot make it work after 3 attempts, revert your changes and exit

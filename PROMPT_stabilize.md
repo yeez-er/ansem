@@ -3,6 +3,7 @@
 Read `STABILIZE_FAILURES.md` (or run the test suite yourself if it doesn't exist). Fix max 5 root causes per round — a single root-cause fix often resolves multiple failures.
 
 **Rules:**
+
 - Fix application code OR test code. Both are valid stabilization targets.
 - E2E failures are REAL failures. Wrong selector? Fix it. Wrong expectation? Fix it. Tests are code.
 - Do NOT add features, refactor, or improve beyond fixing failures.

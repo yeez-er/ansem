@@ -36,24 +36,29 @@ Launch **code-reviewer** agent via the Task tool (subagent_type=code-reviewer):
 Instruct it to analyze ALL evidence from Phase 1 and classify each learning as:
 
 ### Universal (applies to any project)
+
 Patterns about: JavaScript/TypeScript, API design, database operations, testing strategy, TDD workflow, agent coordination, code review, external services, seed data.
 
 **These go into the appropriate topic file under `ralph/wisdom/` (e.g., `api-design.md`, `testing.md`, `process.md`, `code-quality.md`, `seed-data.md`). Add to `ralph/wisdom/anti-patterns.md` if it's a "don't do this" pattern.**
 
 ### Framework-Specific (applies to projects using the same stack)
+
 Patterns about: Next.js, React, tRPC, Drizzle, Prisma, Hono, Clerk, Supabase, etc.
 
 **These go into the matching file under `ralph/wisdom/frameworks/` (e.g., `nextjs.md`, `trpc.md`). Create a new file if the framework doesn't have one yet.**
 
 ### Project-Specific (only applies to this project)
+
 Patterns about: this particular domain, this particular data model, this particular codebase's quirks.
 
 **These stay in `references/[project-name]-retrospective.md` and are NOT added to accumulated wisdom.**
 
 ### Anti-Patterns (things that went wrong)
+
 Things to explicitly avoid. These become "Don't Do This" entries in accumulated wisdom.
 
 ### Recurrence Check (wisdom that failed to prevent)
+
 Cross-reference this project's `KNOWN_ISSUES.md` entries and reviewer findings against EXISTING wisdom entries. If an issue recurred despite a wisdom entry covering it, that entry failed as documentation: tag it `[recurred: PROJECT_NAME]` in its topic file and propose converting it into enforcement (a PROMPT rule or PostToolUse hook). Enforcement beats advice.
 
 ---
@@ -63,9 +68,11 @@ Cross-reference this project's `KNOWN_ISSUES.md` entries and reviewer findings a
 Launch **feature-builder** agent via the Task tool (subagent_type=feature-builder):
 
 ### Step 1: Update Wisdom Topic Files
+
 Read `ralph/accumulated-wisdom.md` (index) to understand the file structure. Then APPEND new learnings to the appropriate topic file under `ralph/wisdom/`.
 
 Rules for additions:
+
 - **No duplicates**: If the learning already exists in the topic file, skip it or update the existing entry.
 - **Be concise**: One line per pattern where possible. Details go in the retrospective doc.
 - **Include the source**: Tag with `[from: PROJECT_NAME]` so you can trace where it came from.
@@ -75,7 +82,9 @@ Rules for additions:
 - **New frameworks**: If the project uses a framework without an existing file, create `ralph/wisdom/frameworks/[framework].md` and add a reference to the index.
 
 ### Step 2: Create Project Retrospective
+
 Write a `references/[project-name]-retrospective.md` with:
+
 - Project summary (what, scope, duration, result)
 - What worked well (top 5)
 - What didn't work (top 5-10, with root cause and fix)
@@ -83,19 +92,25 @@ Write a `references/[project-name]-retrospective.md` with:
 - Key numbers (tasks, tests, plan iterations, reviewer findings)
 
 ### Step 3: Update CLAUDE.md Template (if needed)
+
 If any universal learning should be a default rule for ALL projects:
+
 - Propose the addition to the CLAUDE.md template (not the project-specific copy).
 - Mark it clearly as `<!-- PROPOSED: [description] -->` for human review.
 
 ### Step 4: Update PROMPT Files (if needed)
+
 If any learning reveals a missing guardrail in PROMPT_plan.md or PROMPT_build.md:
+
 - Propose the addition.
 - Mark as `<!-- PROPOSED: [description] -->` for human review.
 
 ### Step 5: Nominate Global Patterns to `~/.claude/CLAUDE.md`
+
 Review ALL learnings from Phase 2. For any pattern that is **truly universal** — applies to every codebase, every language, every project — nominate it to the user's global `~/.claude/CLAUDE.md`.
 
 **What qualifies as global:**
+
 - Code style preferences that transcend any single framework (e.g., "always use early returns", "never leave console.log in commits")
 - Error handling patterns (e.g., "always check for zero before division")
 - Testing philosophy (e.g., "assert error codes, not just that it throws")
@@ -104,12 +119,14 @@ Review ALL learnings from Phase 2. For any pattern that is **truly universal** �
 - Patterns that appeared in 3+ projects (check `[from: ...]` tags in accumulated-wisdom.md)
 
 **What does NOT qualify:**
+
 - Framework-specific patterns (Next.js, tRPC, Drizzle — these stay in `ralph/wisdom/frameworks/`)
 - Project-specific patterns (this domain, this data model)
 - Patterns that only apply to one language
 
 **How to write nominations:**
 Read `~/.claude/CLAUDE.md`. Append to the `## Nominations` section:
+
 ```
 <!-- NOMINATED: [PROJECT_NAME] [DATE] -->
 - [pattern description — one line, actionable]
@@ -122,6 +139,7 @@ Also review existing nominations: if any nomination from a PREVIOUS project appe
 ## Phase 4: Verify
 
 After all updates:
+
 1. Read the updated topic files under `ralph/wisdom/` and verify they're well-organized and non-redundant.
 2. Verify the retrospective doc is complete.
 3. List all proposed changes to template files for human review.
@@ -131,6 +149,7 @@ After all updates:
 ## Completion
 
 Report:
+
 - Number of new learnings added to accumulated wisdom
 - Categories: N universal, N framework-specific, N anti-patterns
 - Verification coverage: N `[verified]` / M total entries touched (raise this every retro)

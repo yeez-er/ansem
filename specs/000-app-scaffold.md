@@ -22,15 +22,15 @@ A running Next.js application skeleton with the full toolchain wired — every l
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| Next.js scaffold (`package.json`, `src/app/*`, configs) | CREATE |
-| `src/server/api/{trpc,root}.ts`, `src/app/api/trpc/[trpc]/route.ts` | CREATE |
-| `src/env.ts` | CREATE |
-| `drizzle.config.ts` | CREATE |
-| `vitest.config.ts`, `playwright.config.ts` | CREATE |
-| `.env.example`, `vercel.json` | CREATE |
-| `ralph/AGENTS.md` | MODIFY — confirm commands are real (docs must match runnable scripts) |
+| File                                                                | Action                                                                |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Next.js scaffold (`package.json`, `src/app/*`, configs)             | CREATE                                                                |
+| `src/server/api/{trpc,root}.ts`, `src/app/api/trpc/[trpc]/route.ts` | CREATE                                                                |
+| `src/env.ts`                                                        | CREATE                                                                |
+| `drizzle.config.ts`                                                 | CREATE                                                                |
+| `vitest.config.ts`, `playwright.config.ts`                          | CREATE                                                                |
+| `.env.example`, `vercel.json`                                       | CREATE                                                                |
+| `ralph/AGENTS.md`                                                   | MODIFY — confirm commands are real (docs must match runnable scripts) |
 
 ## Acceptance Criteria
 

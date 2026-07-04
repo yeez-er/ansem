@@ -31,29 +31,34 @@ Every project goes through this process. A todo list, a single-function utility,
 For each spec file, evaluate against these criteria:
 
 ### Completeness
+
 - Are all features described with enough detail to implement?
 - Are acceptance criteria specified for each feature?
 - Are edge cases addressed (empty state, error state, max limits)?
 - Are there TODO markers, placeholder text, or "to be defined later" sections?
 
 ### Coverage
+
 - Does the spec cover the full user flow (not just the happy path)?
 - Are error handling expectations defined?
 - Are authentication/authorization requirements specified?
 - Are data validation rules described?
 
 ### Consistency
+
 - Do specs reference each other correctly (no broken cross-references)?
 - Are naming conventions consistent across specs?
 - Do data models align across specs that share entities?
 - Are there contradictions between specs?
 
 ### Clarity
+
 - Could two different developers read this and build the same thing?
 - Are ambiguous terms defined (e.g., "user" vs "admin" vs "account")?
 - Are quantities and limits specified (e.g., "supports multiple" — how many?)?
 
 ### YAGNI Check
+
 - Does the spec include features that aren't needed for MVP?
 - Are there gold-plated requirements that could be deferred?
 - Flag any "nice to have" items that should be explicitly deferred.
@@ -74,24 +79,32 @@ Write findings to `notes/spec-review.md` using this format:
 ## Per-Spec Findings
 
 ### [spec-filename.md]
+
 **Status:** [APPROVED | NEEDS_REVISION]
+
 - [Issue description] — [why it matters]
 - [Issue description] — [why it matters]
 
 ### [spec-filename.md]
+
 **Status:** [APPROVED | NEEDS_REVISION]
+
 - [Issue description] — [why it matters]
 
 ## Cross-Spec Issues
+
 - [Inconsistency or gap that spans multiple specs]
 
 ## Missing Coverage
+
 - [Features or flows not covered by any spec]
 
 ## Deferred Items (YAGNI)
+
 - [Items that should be explicitly out of scope for MVP]
 
 ## Verdict Rationale
+
 [1-2 sentences explaining overall verdict]
 ```
 
@@ -100,6 +113,7 @@ Write findings to `notes/spec-review.md` using this format:
 ## Phase 4: Surface Ambiguities
 
 If the review found NEEDS_REVISION items, use the **AskUserQuestion** tool to clarify the most critical ambiguities (up to 4 questions). Each question MUST:
+
 - Reference the specific spec file and section
 - Provide 2-4 concrete options with descriptions
 - Explain why the answer materially changes the plan

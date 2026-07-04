@@ -20,6 +20,7 @@ Read these files to understand the project:
 5. **Existing Tests** — Read `e2e/` directory (if exists) to understand what's already covered.
 
 Identify:
+
 - The full tech stack (framework, router, state management, API layer, auth, database, styling)
 - The E2E test framework to use (default: Playwright, override from `ralph/AGENTS.md`)
 - The dev server command and base URL
@@ -33,15 +34,16 @@ Systematically analyze the codebase and produce the following inventories. Write
 
 ### 2.1 Route & Page Inventory
 
-| Route / Screen | Auth Required | Roles Allowed | Key Components | Forms | API Calls | Dynamic Params |
-|----------------|---------------|---------------|----------------|-------|-----------|----------------|
-| `/`            | No            | All           | Hero, FeatureCards | —  | GET /api/featured | — |
-| `/dashboard`   | Yes           | admin, user   | StatsGrid, ActivityFeed | — | GET /api/stats | — |
-| `...`          | ...           | ...           | ...            | ...   | ...       | ...            |
+| Route / Screen | Auth Required | Roles Allowed | Key Components          | Forms | API Calls         | Dynamic Params |
+| -------------- | ------------- | ------------- | ----------------------- | ----- | ----------------- | -------------- |
+| `/`            | No            | All           | Hero, FeatureCards      | —     | GET /api/featured | —              |
+| `/dashboard`   | Yes           | admin, user   | StatsGrid, ActivityFeed | —     | GET /api/stats    | —              |
+| `...`          | ...           | ...           | ...                     | ...   | ...               | ...            |
 
 ### 2.2 Component Interaction Inventory
 
 For every component that renders UI, list:
+
 - All interactive elements (buttons, links, inputs, toggles, dropdowns, modals, tabs, accordions, drag targets)
 - All conditional renders and the conditions that trigger each branch
 - All dynamic content (lists, tables, grids) and their empty/loading/error/populated states
@@ -49,34 +51,35 @@ For every component that renders UI, list:
 
 ### 2.3 Form Inventory
 
-| Form ID | Location | Fields | Validation Rules | Submit Endpoint | Success Behavior | Error Behavior |
-|---------|----------|--------|------------------|-----------------|------------------|----------------|
-| `login` | `/login` | email, password | email: required+format, password: required+min8 | POST /api/auth/login | redirect `/dashboard` | inline errors |
-| `...`   | ...      | ...    | ...              | ...             | ...              | ...            |
+| Form ID | Location | Fields          | Validation Rules                                | Submit Endpoint      | Success Behavior      | Error Behavior |
+| ------- | -------- | --------------- | ----------------------------------------------- | -------------------- | --------------------- | -------------- |
+| `login` | `/login` | email, password | email: required+format, password: required+min8 | POST /api/auth/login | redirect `/dashboard` | inline errors  |
+| `...`   | ...      | ...             | ...                                             | ...                  | ...                   | ...            |
 
 ### 2.4 API Dependency Map
 
-| Endpoint / Action | Method | Used By (Pages) | Request Schema | Response Codes | Side Effects |
-|-------------------|--------|------------------|----------------|----------------|--------------|
-| `/api/users`      | GET    | /admin/users     | ?page&limit    | 200, 401, 500  | — |
+| Endpoint / Action | Method | Used By (Pages)  | Request Schema | Response Codes | Side Effects        |
+| ----------------- | ------ | ---------------- | -------------- | -------------- | ------------------- |
+| `/api/users`      | GET    | /admin/users     | ?page&limit    | 200, 401, 500  | —                   |
 | `/api/users`      | POST   | /admin/users/new | {name, email}  | 201, 400, 409  | sends welcome email |
-| `...`             | ...    | ...              | ...            | ...            | ... |
+| `...`             | ...    | ...              | ...            | ...            | ...                 |
 
 ### 2.5 Mutation & Lifecycle Inventory
 
 For every entity in the application, catalog ALL state mutations — not just Create:
 
-| Entity | Create | Read/List | Update/Edit | Delete | Status Transitions | Lifecycle Workflows |
-|--------|--------|-----------|-------------|--------|--------------------|---------------------|
-| User   | signup form | /users list, /users/:id detail | /users/:id/edit | archive button | active→suspended→deleted | onboarding→active→churned |
-| Order  | checkout | /orders list | — | cancel button | pending→confirmed→shipped→delivered | create→pay→fulfill→deliver |
-| `...`  | ...    | ...       | ...         | ...    | ...                | ...                 |
+| Entity | Create      | Read/List                      | Update/Edit     | Delete         | Status Transitions                  | Lifecycle Workflows        |
+| ------ | ----------- | ------------------------------ | --------------- | -------------- | ----------------------------------- | -------------------------- |
+| User   | signup form | /users list, /users/:id detail | /users/:id/edit | archive button | active→suspended→deleted            | onboarding→active→churned  |
+| Order  | checkout    | /orders list                   | —               | cancel button  | pending→confirmed→shipped→delivered | create→pay→fulfill→deliver |
+| `...`  | ...         | ...                            | ...             | ...            | ...                                 | ...                        |
 
 **Every cell in this table that has a value MUST have a corresponding test.** If Update is "—" (not supported), note it. If Update exists but you wrote no test for it, that's a gap.
 
 ### 2.6 Cross-Page Data Flow Map
 
 Identify every case where an action on one page/screen produces a visible effect on another:
+
 - Create entity → appears in list
 - Update profile → header reflects change
 - Delete item → removed from all views
@@ -119,6 +122,7 @@ e2e/
 ### Page Object Pattern
 
 Every page/screen MUST have a corresponding Page Object class that:
+
 - Encapsulates all selectors (prefer `data-testid`, fall back to accessible roles/labels)
 - Exposes action methods (`fillLoginForm()`, `submitOrder()`, `navigateToSettings()`)
 - Exposes assertion methods (`expectErrorMessage()`, `expectRowCount()`, `expectRedirectTo()`)
@@ -134,6 +138,7 @@ Generate tests covering ALL of the following categories. If a category doesn't a
 ### 4.1 Component Interaction Coverage
 
 **Interactive Elements:**
+
 - Click every button → verify the expected outcome (state change, navigation, modal, API call)
 - Click every link → verify destination
 - Toggle every switch/checkbox → verify state change and side effects
@@ -143,16 +148,19 @@ Generate tests covering ALL of the following categories. If a category doesn't a
 - Trigger every context menu, right-click action
 
 **Conditional Rendering (Branch Coverage):**
+
 - For every conditional in templates/JSX: create test data triggering EACH branch
 - Verify the correct branch renders and the other does NOT
 
 **Dynamic Content:**
+
 - Lists/tables/grids: test with 0 items (empty state), 1 item, many items
 - Pagination: first page, last page, navigation, items-per-page
 - Search/filter: matching results, no results, clear filters
 - Sorting: each sortable column, ascending, descending
 
 **Loading & Error States:**
+
 - Loading indicators/skeletons during data fetch
 - Error messages when fetch fails
 - Retry mechanisms
@@ -167,6 +175,7 @@ For **every** form:
 **Validation — Empty Submission:** Submit empty → verify all required field errors → verify no API call
 
 **Validation — Per-Field:** For each field, make only THAT field invalid → verify specific error message. Test every validation rule:
+
 - Required: empty, whitespace-only
 - Email: missing @, missing domain
 - Password: too short, missing required character classes
@@ -176,11 +185,13 @@ For **every** form:
 - Custom validators: exercise each rule
 
 **Boundary Testing:**
+
 - Min/max length strings for text fields
 - Min/max values for numeric fields
 - Special characters: `<script>alert('xss')</script>`, `'; DROP TABLE users; --`, unicode/emoji
 
 **Multi-Step / Wizard Forms:**
+
 - Forward through all steps → verify completion
 - Backward → verify data persists
 - Skip optional steps → verify flow completes
@@ -188,6 +199,7 @@ For **every** form:
 - Refresh mid-flow → verify state recovery or appropriate reset
 
 **Re-submission Guards:**
+
 - Double-click submit rapidly → verify only one API request
 - Verify submit button disables during submission
 
@@ -234,16 +246,16 @@ For **every** form:
 
 **Response Scenarios:**
 
-| Status Code | Verify |
-|-------------|--------|
-| 200 / 201   | UI updates correctly |
-| 400          | Field-level errors display |
-| 401          | Redirect to login or re-auth prompt |
-| 403          | Access denied message |
-| 404          | Not found error state |
-| 500          | Generic error handling |
-| Network timeout | Timeout message and retry option |
-| Network offline | Offline state handling |
+| Status Code     | Verify                              |
+| --------------- | ----------------------------------- |
+| 200 / 201       | UI updates correctly                |
+| 400             | Field-level errors display          |
+| 401             | Redirect to login or re-auth prompt |
+| 403             | Access denied message               |
+| 404             | Not found error state               |
+| 500             | Generic error handling              |
+| Network timeout | Timeout message and retry option    |
+| Network offline | Offline state handling              |
 
 ### 4.6 Edge Cases & Error Boundaries
 
@@ -297,51 +309,52 @@ These patterns produce tests that silently pass when features are broken:
 ```typescript
 // ❌ BANNED: Optional assertion — silently skips if element never appears
 if (await element.isVisible({ timeout: 5_000 }).catch(() => false)) {
-  await expect(element).toHaveText('...');
+  await expect(element).toHaveText("...");
 }
 // Test passes whether the feature works or not.
 
 // ✅ REQUIRED: Unconditional assertion — fails if element doesn't appear
 await expect(element).toBeVisible();
-await expect(element).toHaveText('...');
+await expect(element).toHaveText("...");
 ```
 
 ```typescript
 // ❌ BANNED: Visibility-only check for a mutation
 await submitButton.click();
-await expect(successToast).toBeVisible();  // Only checks toast appeared
+await expect(successToast).toBeVisible(); // Only checks toast appeared
 
 // ✅ REQUIRED: Verify the mutation actually happened
 await submitButton.click();
 await expect(successToast).toBeVisible();
-await page.goto('/entities');
-await expect(page.getByText('New Entity Name')).toBeVisible();  // Data persisted
+await page.goto("/entities");
+await expect(page.getByText("New Entity Name")).toBeVisible(); // Data persisted
 ```
 
 ```typescript
 // ❌ BANNED: "Page loads" as the only assertion
-test('dashboard page', async ({ page }) => {
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL('/dashboard');
-  await expect(page.getByText('Dashboard')).toBeVisible();
+test("dashboard page", async ({ page }) => {
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL("/dashboard");
+  await expect(page.getByText("Dashboard")).toBeVisible();
 });
 // This tests the router, not the feature.
 
 // ✅ REQUIRED: Test actual page functionality
-test('dashboard shows real KPI values', async ({ page }) => {
-  await page.goto('/dashboard');
-  const revenue = page.getByTestId('revenue-kpi');
+test("dashboard shows real KPI values", async ({ page }) => {
+  await page.goto("/dashboard");
+  const revenue = page.getByTestId("revenue-kpi");
   await expect(revenue).toBeVisible();
-  await expect(revenue).not.toHaveText('$0');
-  await expect(revenue).not.toHaveText('NaN');
+  await expect(revenue).not.toHaveText("$0");
+  await expect(revenue).not.toHaveText("NaN");
   // Verify actual data, not just element existence
 });
 ```
 
 **Rules:**
+
 1. Every `if/try-catch` that guards an assertion is a bug in the test. Assertions must be unconditional.
 2. Every form submission test must verify the mutation persisted (navigate away, come back, check data).
-3. Every button/action test must verify the *outcome*, not just that the button is clickable.
+3. Every button/action test must verify the _outcome_, not just that the button is clickable.
 4. Every status transition test must verify the entity's state actually changed (check badge text, API response, or list filter).
 5. "Element is visible" is NEVER sufficient as the sole assertion for a feature test. Visibility confirms rendering; you must also confirm behavior.
 
@@ -349,17 +362,17 @@ test('dashboard shows real KPI values', async ({ page }) => {
 
 Every test must reach the appropriate depth level:
 
-| Test Type | Minimum Assertion Depth |
-|-----------|------------------------|
-| Page load | Page renders + key data is populated (not empty/zero/NaN) |
-| Form submit | Fill → submit → verify success indicator → navigate to list → verify new entry exists |
-| Edit/Update | Load existing data → modify → submit → verify changes reflected on detail AND list pages |
-| Delete | Trigger delete → confirm dialog → verify entity removed from list → verify detail page 404s or redirects |
-| Status transition | Trigger transition → verify new status badge/label → verify entity appears in correct filtered view |
-| Dialog confirm | Open dialog → fill if needed → confirm → verify side effect (not just "dialog closed") |
-| Dialog cancel | Open dialog → cancel → verify NO side effect occurred |
-| Settings save | Change value → save → refresh page → verify value persisted |
-| Filter/sort | Apply filter → verify result count changed → verify visible items match filter criteria |
+| Test Type         | Minimum Assertion Depth                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------- |
+| Page load         | Page renders + key data is populated (not empty/zero/NaN)                                                |
+| Form submit       | Fill → submit → verify success indicator → navigate to list → verify new entry exists                    |
+| Edit/Update       | Load existing data → modify → submit → verify changes reflected on detail AND list pages                 |
+| Delete            | Trigger delete → confirm dialog → verify entity removed from list → verify detail page 404s or redirects |
+| Status transition | Trigger transition → verify new status badge/label → verify entity appears in correct filtered view      |
+| Dialog confirm    | Open dialog → fill if needed → confirm → verify side effect (not just "dialog closed")                   |
+| Dialog cancel     | Open dialog → cancel → verify NO side effect occurred                                                    |
+| Settings save     | Change value → save → refresh page → verify value persisted                                              |
+| Filter/sort       | Apply filter → verify result count changed → verify visible items match filter criteria                  |
 
 ### Data Management
 
@@ -406,9 +419,9 @@ Before committing, verify:
 
 Append to `notes/e2e-analysis.md` any code paths that **cannot** be covered by E2E tests:
 
-| Uncoverable Path | Reason | Recommended Test Type |
-|-------------------|--------|----------------------|
-| `...`             | ...    | Unit / Integration / Contract / Manual |
+| Uncoverable Path | Reason | Recommended Test Type                  |
+| ---------------- | ------ | -------------------------------------- |
+| `...`            | ...    | Unit / Integration / Contract / Manual |
 
 ---
 

@@ -65,6 +65,7 @@ Write a summary at the top of `notes/periodic-review-iter-${ITERATION}.md`:
 **Tasks added to plan**: [count]
 
 ## Findings Summary
+
 [bulleted list of key findings]
 ```
 
@@ -73,13 +74,17 @@ Write a summary at the top of `notes/periodic-review-iter-${ITERATION}.md`:
 ## Completion
 
 1. Commit the review file:
+
    ```bash
    git add notes/periodic-review-iter-${ITERATION}.md
    ```
+
    If tasks were added, also stage:
+
    ```bash
    git add IMPLEMENTATION_PLAN.md KNOWN_ISSUES.md
    ```
+
    Commit message: `docs: periodic review at iteration ${ITERATION}`
 
 2. Report: total findings, tasks created, quality trend, and whether any CRITICAL issues need immediate attention.

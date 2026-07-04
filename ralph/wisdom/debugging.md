@@ -112,7 +112,9 @@ async function waitFor<T>(
     const result = condition();
     if (result) return result;
     if (Date.now() - startTime > timeoutMs) {
-      throw new Error(`Timeout waiting for ${description} after ${timeoutMs}ms`);
+      throw new Error(
+        `Timeout waiting for ${description} after ${timeoutMs}ms`,
+      );
     }
     await new Promise((r) => setTimeout(r, 10)); // Poll every 10ms
   }

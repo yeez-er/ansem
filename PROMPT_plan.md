@@ -46,6 +46,7 @@ Edge cases:
 ```
 
 **Key rules:**
+
 - Routes must be the ACTUAL routes from the app router, including dynamic segments (e.g., `/vendor-dashboard/[id]/meals`)
 - Button/link names must match the ACTUAL text or aria-label from the design spec
 - Form field labels must match the ACTUAL label text from the design spec
@@ -55,6 +56,7 @@ Edge cases:
 These scenarios stay in `IMPLEMENTATION_PLAN.md` and are used by `./loop.sh visual-verify`, which writes throwaway Playwright scripts to click through each workflow, screenshot each step, and verify the UI matches the design.
 
 Example (from a real Figma spec):
+
 ```
 ### Visual verify
 Route: /vendor-dashboard/[id]

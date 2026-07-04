@@ -36,6 +36,7 @@ For each directory with significant changes:
 ### Phase 3: Update ralph/AGENTS.md
 
 Check if any operational commands have changed:
+
 - New scripts in package.json?
 - New environment variables in `.env.example`?
 - New database tables or enums?
@@ -66,18 +67,22 @@ If new folder-level CLAUDE.md files were created, add references to them in the 
 **Files changed**: [count]
 
 ## CLAUDE.md Updates
+
 - [path/CLAUDE.md] — [what was updated]
 - ...
 
 ## AGENTS.md Updates
+
 - [what was updated]
 
 ## KNOWN_ISSUES.md
+
 - [N] issues checked
 - [N] resolved (removed)
 - [N] escalated (3+ occurrences)
 
 ## New Folder CLAUDE.md Files
+
 - [path/CLAUDE.md] — [why it was created]
 ```
 

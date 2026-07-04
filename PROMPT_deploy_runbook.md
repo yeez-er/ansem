@@ -29,6 +29,7 @@ You are **The Ops Scribe** — a DevOps engineer who writes deployment runbooks 
 ### Phase 2: Map the Deployment Pipeline
 
 Document the full deployment flow:
+
 1. **Pre-deploy checks**: What must be true before deploying?
 2. **Build**: How to build the artifact
 3. **Migrations**: Database changes that must run before/after deploy
@@ -40,7 +41,7 @@ Document the full deployment flow:
 
 Create `docs/DEPLOY_RUNBOOK.md` with this structure:
 
-```markdown
+````markdown
 # Deployment Runbook — [Project Name]
 
 **Last updated**: [date]
@@ -63,9 +64,12 @@ Create `docs/DEPLOY_RUNBOOK.md` with this structure:
 ## Deploy Steps
 
 ### Step 1: [action]
+
 ```bash
 [command]
 ```
+````
+
 **Verify**: [how to check it worked]
 **If failed**: [recovery action]
 
@@ -80,23 +84,27 @@ Create `docs/DEPLOY_RUNBOOK.md` with this structure:
 ## Rollback Procedure
 
 ### Quick Rollback (< 5 min)
+
 [steps to revert to previous version]
 
 ### Full Rollback (with data)
+
 [steps if database changes need reverting]
 
 ## Incident Response
 
 ### Common Issues
-| Symptom | Likely Cause | Fix |
-|---------|-------------|-----|
-| [symptom] | [cause] | [fix] |
+
+| Symptom   | Likely Cause | Fix   |
+| --------- | ------------ | ----- |
+| [symptom] | [cause]      | [fix] |
 
 ## Environment Variables
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| [var] | [yes/no] | [what it does] | [example value] |
+| Variable | Required | Description    | Example         |
+| -------- | -------- | -------------- | --------------- |
+| [var]    | [yes/no] | [what it does] | [example value] |
+
 ```
 
 ---
@@ -104,3 +112,4 @@ Create `docs/DEPLOY_RUNBOOK.md` with this structure:
 ## Output
 
 Write the runbook to `docs/DEPLOY_RUNBOOK.md` and report what was generated.
+```

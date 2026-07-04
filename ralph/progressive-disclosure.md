@@ -12,6 +12,7 @@
 ## When to Generate
 
 The codebase-architect agent should generate folder-level CLAUDE.md files during:
+
 - Initial project setup (Phase 1 Discovery)
 - After major architecture changes (re-run codebase-architect)
 - When a new top-level source directory is added
@@ -62,17 +63,20 @@ Each folder-level CLAUDE.md should be **10-30 lines max**. Include ONLY:
 This folder contains tRPC/REST API procedures.
 
 ## Patterns
+
 - Every mutation MUST check `verifyVendorOwnership` before modifying data
 - Return `null` for "no data" — never `{}` or `[]`
 - Use TRPCError codes: UNAUTHORIZED (no user), FORBIDDEN (not owner), NOT_FOUND, CONFLICT, BAD_REQUEST
 - Wrap external service calls in try-catch with dev-mode fallback
 
 ## Avoid
+
 - `.update().set()` without `.where()` — updates ALL rows
 - `ilike` without escaping `%` and `_` metacharacters
 - Queries on soft-delete tables without `isNull(deletedAt)`
 
 ## Tests
+
 - Use tRPC caller pattern with mock context
 - Assert error codes: `.rejects.toMatchObject({ code: 'FORBIDDEN' })`
 - Mock `@clerk/backend` BEFORE importing auth-dependent modules
@@ -86,16 +90,19 @@ This folder contains tRPC/REST API procedures.
 This folder contains React/Next.js components.
 
 ## Patterns
+
 - Use shadcn/ui component primitives where available
 - Derive types from API: `RouterOutputs['router']['procedure']` — never manual interfaces
 - `handleSubmit` MUST use validated `values` param, NOT `getValues()`
 
 ## Avoid
+
 - `useState(prop)` without `useEffect` sync — prop changes won't propagate
 - Inline styles — use Tailwind classes or design system tokens
 - Console.log in committed code
 
 ## Tests
+
 - Pages with server components: use source verification (can't render in jsdom)
 - Pure components: standard render tests
 ```
@@ -108,6 +115,7 @@ The root `CLAUDE.md` should use a "progressive disclosure" pattern:
 ## Architecture
 
 See folder-level CLAUDE.md files for context-specific rules:
+
 - `src/api/CLAUDE.md` — API procedure patterns and ownership guards
 - `src/components/CLAUDE.md` — UI component patterns and styling rules
 - `src/db/CLAUDE.md` — Database query patterns and migration rules
@@ -130,6 +138,7 @@ When generating folder-level CLAUDE.md files, pull rules from:
 ## Maintenance
 
 Folder-level CLAUDE.md files should be updated:
+
 - By the **codebase-architect** during re-scans
 - By the **code-reviewer** when it discovers a new pattern specific to a folder
 - By the **retro agent** when distributing new learnings to the right locations

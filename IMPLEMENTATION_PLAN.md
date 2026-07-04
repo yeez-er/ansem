@@ -12,6 +12,7 @@
 **Stack**: [From CLAUDE.md -- framework, ORM, DB, auth, package manager, test runner]
 
 **Key architectural decisions**:
+
 - [Decision 1 -- e.g., derived types from ORM schema, no manual interfaces]
 - [Decision 2 -- e.g., service layer factory pattern]
 - [Decision 3 -- e.g., route registration pattern]

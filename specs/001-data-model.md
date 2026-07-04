@@ -7,7 +7,7 @@ The relational backbone for a cross-platform creator leaderboard: creators, thei
 ## Context
 
 - Greenfield. Stack: Next.js (App Router) + tRPC + Drizzle ORM + Neon Postgres.
-- Design principle: **snapshots are the source of truth**; leaderboards are derived views. Daily boards rank *metric deltas within the window*, so we must retain history, not just latest values.
+- Design principle: **snapshots are the source of truth**; leaderboards are derived views. Daily boards rank _metric deltas within the window_, so we must retain history, not just latest values.
 - Every constraint here must exist in BOTH the Drizzle schema AND a generated SQL migration (ORM metadata without a migration is documentation, not enforcement).
 
 ## Schema
@@ -20,48 +20,48 @@ The relational backbone for a cross-platform creator leaderboard: creators, thei
 
 ### `creators` — one row per platform account
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid pk `defaultRandom()` | |
-| `platform` | platform enum, not null | |
-| `handle` | text, not null | normalized: lowercase, no leading `@` |
-| `display_name` | text, null | |
-| `avatar_url` | text, null | |
-| `profile_url` | text, not null | |
-| `is_banned` | boolean, not null, default false | banned creators are excluded from all leaderboards server-side |
-| `claimed_by_user_id` | text, null | Clerk user id — future claim flow, nullable in v1 |
-| `created_at` / `updated_at` | timestamptz, not null, defaultNow | |
+| Column                      | Type                              | Notes                                                          |
+| --------------------------- | --------------------------------- | -------------------------------------------------------------- |
+| `id`                        | uuid pk `defaultRandom()`         |                                                                |
+| `platform`                  | platform enum, not null           |                                                                |
+| `handle`                    | text, not null                    | normalized: lowercase, no leading `@`                          |
+| `display_name`              | text, null                        |                                                                |
+| `avatar_url`                | text, null                        |                                                                |
+| `profile_url`               | text, not null                    |                                                                |
+| `is_banned`                 | boolean, not null, default false  | banned creators are excluded from all leaderboards server-side |
+| `claimed_by_user_id`        | text, null                        | Clerk user id — future claim flow, nullable in v1              |
+| `created_at` / `updated_at` | timestamptz, not null, defaultNow |                                                                |
 
 **UNIQUE(platform, handle)** — upserts key on this natural key (never on the uuid pk, or `onConflictDoNothing` will never trigger).
 
 ### `posts` — one row per tracked piece of content
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid pk `defaultRandom()` | |
-| `creator_id` | uuid fk → creators.id, not null | |
-| `platform` | platform enum, not null | denormalized from creator; must always match |
-| `platform_post_id` | text, not null | canonical id parsed from the URL (tweet id, TikTok video id, IG shortcode) |
-| `url` | text, not null | canonical URL rebuilt from platform + id, not the raw user input |
-| `caption` | text, null | |
-| `posted_at` | timestamptz, null | publication time at source when known |
-| `status` | post_status enum, not null, default `pending` | |
-| `source` | post_source enum, not null | |
-| `submitted_by_user_id` | text, null | Clerk user id when source = submission |
-| `latest_views` / `latest_likes` / `latest_comments` / `latest_shares` | bigint, not null, default 0 | denormalized from newest snapshot — written by ingestion (spec 004), read by leaderboard queries (spec 007). Both sides land in the same milestone; a denormalized column with no reader or no writer is a defect. |
-| `latest_snapshot_at` | timestamptz, null | |
-| `created_at` | timestamptz, not null, defaultNow | |
+| Column                                                                | Type                                          | Notes                                                                                                                                                                                                              |
+| --------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                                                                  | uuid pk `defaultRandom()`                     |                                                                                                                                                                                                                    |
+| `creator_id`                                                          | uuid fk → creators.id, not null               |                                                                                                                                                                                                                    |
+| `platform`                                                            | platform enum, not null                       | denormalized from creator; must always match                                                                                                                                                                       |
+| `platform_post_id`                                                    | text, not null                                | canonical id parsed from the URL (tweet id, TikTok video id, IG shortcode)                                                                                                                                         |
+| `url`                                                                 | text, not null                                | canonical URL rebuilt from platform + id, not the raw user input                                                                                                                                                   |
+| `caption`                                                             | text, null                                    |                                                                                                                                                                                                                    |
+| `posted_at`                                                           | timestamptz, null                             | publication time at source when known                                                                                                                                                                              |
+| `status`                                                              | post_status enum, not null, default `pending` |                                                                                                                                                                                                                    |
+| `source`                                                              | post_source enum, not null                    |                                                                                                                                                                                                                    |
+| `submitted_by_user_id`                                                | text, null                                    | Clerk user id when source = submission                                                                                                                                                                             |
+| `latest_views` / `latest_likes` / `latest_comments` / `latest_shares` | bigint, not null, default 0                   | denormalized from newest snapshot — written by ingestion (spec 004), read by leaderboard queries (spec 007). Both sides land in the same milestone; a denormalized column with no reader or no writer is a defect. |
+| `latest_snapshot_at`                                                  | timestamptz, null                             |                                                                                                                                                                                                                    |
+| `created_at`                                                          | timestamptz, not null, defaultNow             |                                                                                                                                                                                                                    |
 
 **UNIQUE(platform, platform_post_id)** — the dedupe gate for submissions and discovery. Indexes: `(status, platform)`, `(creator_id)`.
 
 ### `metric_snapshots` — append-only time series
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid pk `defaultRandom()` | |
-| `post_id` | uuid fk → posts.id, not null, cascade delete | |
-| `views` / `likes` / `comments` / `shares` | bigint, not null, default 0 | |
-| `captured_at` | timestamptz, not null, defaultNow | |
+| Column                                    | Type                                         | Notes |
+| ----------------------------------------- | -------------------------------------------- | ----- |
+| `id`                                      | uuid pk `defaultRandom()`                    |       |
+| `post_id`                                 | uuid fk → posts.id, not null, cascade delete |       |
+| `views` / `likes` / `comments` / `shares` | bigint, not null, default 0                  |       |
+| `captured_at`                             | timestamptz, not null, defaultNow            |       |
 
 Index **(post_id, captured_at desc)** — window-baseline and latest lookups. Rows are never updated or deleted (except via post cascade). Windowed (daily) scores are computed as `latest − baseline`, never by summing rows, so a duplicate snapshot cannot double-count.
 
@@ -74,16 +74,16 @@ Index **(post_id, captured_at desc)** — window-baseline and latest lookups. Ro
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/server/db/schema/enums.ts` | CREATE |
-| `src/server/db/schema/creators.ts` | CREATE |
-| `src/server/db/schema/posts.ts` | CREATE |
-| `src/server/db/schema/metric-snapshots.ts` | CREATE |
-| `src/server/db/schema/index.ts` | CREATE — barrel export (verify registration, not just existence) |
-| `src/server/db/index.ts` | CREATE — Neon driver + Drizzle client |
-| `drizzle.config.ts` | CREATE |
-| `drizzle/` migration | GENERATE via drizzle-kit |
+| File                                       | Action                                                           |
+| ------------------------------------------ | ---------------------------------------------------------------- |
+| `src/server/db/schema/enums.ts`            | CREATE                                                           |
+| `src/server/db/schema/creators.ts`         | CREATE                                                           |
+| `src/server/db/schema/posts.ts`            | CREATE                                                           |
+| `src/server/db/schema/metric-snapshots.ts` | CREATE                                                           |
+| `src/server/db/schema/index.ts`            | CREATE — barrel export (verify registration, not just existence) |
+| `src/server/db/index.ts`                   | CREATE — Neon driver + Drizzle client                            |
+| `drizzle.config.ts`                        | CREATE                                                           |
+| `drizzle/` migration                       | GENERATE via drizzle-kit                                         |
 
 ## Acceptance Criteria
 

@@ -51,6 +51,7 @@ Compare evidence against claims:
 ### Phase 3: Verdict
 
 **APPROVED** — requires ALL of these:
+
 - [ ] Every acceptance criterion has a corresponding test
 - [ ] Tests fail when the implementation is removed (verified, not assumed)
 - [ ] No untested error paths
@@ -63,6 +64,7 @@ Compare evidence against claims:
 - [ ] No TODOs, FIXMEs, or console.log in changed files
 
 **NEEDS WORK** — if ANY checkbox above is unchecked. List every failing item with:
+
 ```
 ISSUE #N: [category]
 File: [path:line]
@@ -86,6 +88,7 @@ Fix: [specific action]
 **Confidence**: [HIGH | MEDIUM | LOW] — how confident you are in this verdict
 
 ## Evidence Summary
+
 - Tests: [PASS/FAIL] — [X] passing, [Y] failing, [Z]% coverage
 - Build: [PASS/FAIL]
 - Lint: [PASS/FAIL] — [N] warnings
@@ -103,9 +106,11 @@ ISSUE #2: [category]
 ...
 
 ## What Was Done Well
+
 [1-2 items, if any — don't fabricate praise]
 
 ## Verdict Rationale
+
 [2-3 sentences explaining why APPROVED or NEEDS WORK]
 ```
 
@@ -113,12 +118,12 @@ ISSUE #2: [category]
 
 ## Anti-Rationalization Table
 
-| Rationalization | Reality |
-|----------------|---------|
-| "It's just a minor style issue" | Style issues compound. Fix it. |
-| "The test covers the happy path" | Happy path coverage is ~40% of real coverage |
-| "It works on my machine" | Not evidence. Show CI output. |
-| "We'll fix it in the next iteration" | You won't. Fix it now or file in KNOWN_ISSUES.md |
-| "The framework handles that" | Verify. Don't assume. |
-| "It's too small to need a test" | If it's too small to test, it's too small to break. Test it. |
-| "The type system prevents that" | Runtime inputs don't know about your types. Test it. |
+| Rationalization                      | Reality                                                      |
+| ------------------------------------ | ------------------------------------------------------------ |
+| "It's just a minor style issue"      | Style issues compound. Fix it.                               |
+| "The test covers the happy path"     | Happy path coverage is ~40% of real coverage                 |
+| "It works on my machine"             | Not evidence. Show CI output.                                |
+| "We'll fix it in the next iteration" | You won't. Fix it now or file in KNOWN_ISSUES.md             |
+| "The framework handles that"         | Verify. Don't assume.                                        |
+| "It's too small to need a test"      | If it's too small to test, it's too small to break. Test it. |
+| "The type system prevents that"      | Runtime inputs don't know about your types. Test it.         |

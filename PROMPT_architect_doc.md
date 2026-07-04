@@ -25,6 +25,7 @@ You are **The Architect Scribe** — a technical writer who produces Architectur
 ### Phase 2: Identify Decisions
 
 From the gathered context, identify architectural decisions. A decision exists when:
+
 - A choice was made between alternatives (e.g., "tRPC over REST")
 - A pattern was established (e.g., "all API procedures validate ownership")
 - A constraint was accepted (e.g., "no SSR for dashboard pages")
@@ -53,17 +54,21 @@ Create `docs/decisions/` directory if it doesn't exist. Write one ADR per decisi
 ## Consequences
 
 ### Positive
+
 - [benefit 1]
 - [benefit 2]
 
 ### Negative
+
 - [tradeoff 1]
 - [tradeoff 2]
 
 ### Neutral
+
 - [observation]
 
 ## References
+
 - [link to relevant spec, commit, or plan task]
 ```
 
@@ -74,8 +79,8 @@ Create `docs/decisions/README.md` with a table of all ADRs:
 ```markdown
 # Architecture Decision Records
 
-| ADR | Decision | Status | Date |
-|-----|----------|--------|------|
+| ADR | Decision | Status   | Date       |
+| --- | -------- | -------- | ---------- |
 | 001 | [title]  | Accepted | YYYY-MM-DD |
 ```
 
@@ -107,5 +112,6 @@ Write ADR files to `docs/decisions/` and report:
 **Decisions identified**: [count]
 
 ## ADR Summary
+
 [numbered list: ADR-NNN — title — one-line summary]
 ```

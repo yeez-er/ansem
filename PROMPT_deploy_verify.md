@@ -65,16 +65,20 @@ Write `DEPLOY_REPORT.md` in the project root:
 
 ```markdown
 ## Deploy Verification Report
+
 ## Verdict: PASS | FAIL
+
 ## Date: YYYY-MM-DD
 
 ## Build
+
 - **Command:** [build command]
 - **Result:** SUCCESS | FAILED
 - **Duration:** [N]s
 - **Output:** [summary or error excerpt]
 
 ## Startup
+
 - **Command:** [start command]
 - **Result:** SUCCESS | FAILED | TIMEOUT
 - **Startup time:** [N]s
@@ -82,10 +86,12 @@ Write `DEPLOY_REPORT.md` in the project root:
 - **Health check status:** [HTTP status code]
 
 ## Server Output
+
 - **Critical errors:** [none | list of errors]
 - **Warnings:** [none | list of warnings]
 
 ## Summary
+
 [One paragraph: what works, what doesn't, recommended next steps if FAIL]
 ```
 

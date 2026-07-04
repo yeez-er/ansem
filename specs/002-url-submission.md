@@ -13,11 +13,11 @@ Signed-in creators submit links to their $ANSEM posts (X, TikTok, Instagram). Th
 
 `parsePostUrl(raw: string): ParsedPost | null` in `src/lib/post-url.ts`, exported and unit-tested. Returns `null` for anything unrecognized (never throws, never returns `{}`).
 
-| Platform | Accepted forms | Canonical id | Canonical URL |
-|----------|----------------|--------------|---------------|
-| x | `x.com/<handle>/status/<id>`, `twitter.com/...`, with query junk | numeric status id | `https://x.com/<handle>/status/<id>` |
-| tiktok | `tiktok.com/@<handle>/video/<id>`, `vm.tiktok.com/<code>` short links | numeric video id (short links: resolve at ingestion, see spec 003 — parser returns `needsResolution: true`) | `https://www.tiktok.com/@<handle>/video/<id>` |
-| instagram | `instagram.com/reel/<shortcode>`, `/p/<shortcode>`, with query junk | shortcode | `https://www.instagram.com/reel/<shortcode>/` |
+| Platform  | Accepted forms                                                        | Canonical id                                                                                                | Canonical URL                                 |
+| --------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| x         | `x.com/<handle>/status/<id>`, `twitter.com/...`, with query junk      | numeric status id                                                                                           | `https://x.com/<handle>/status/<id>`          |
+| tiktok    | `tiktok.com/@<handle>/video/<id>`, `vm.tiktok.com/<code>` short links | numeric video id (short links: resolve at ingestion, see spec 003 — parser returns `needsResolution: true`) | `https://www.tiktok.com/@<handle>/video/<id>` |
+| instagram | `instagram.com/reel/<shortcode>`, `/p/<shortcode>`, with query junk   | shortcode                                                                                                   | `https://www.instagram.com/reel/<shortcode>/` |
 
 `ParsedPost = { platform, platformPostId, handle: string | null, canonicalUrl, needsResolution?: boolean }`. Strip tracking params, lowercase handles, trim whitespace. Handle is `null` when the URL form doesn't carry it (IG shortcode links).
 
@@ -38,13 +38,13 @@ Upsert + insert run in ONE transaction (concurrent duplicate submissions must no
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/lib/post-url.ts` | CREATE — pure parser |
-| `src/lib/post-url.test.ts` | CREATE — table-driven cases incl. junk input |
-| `src/server/api/routers/submissions/submit.ts` | CREATE |
-| `src/server/api/routers/submissions/index.ts` | CREATE — register |
-| `src/server/api/root.ts` | MODIFY — register router |
+| File                                           | Action                                       |
+| ---------------------------------------------- | -------------------------------------------- |
+| `src/lib/post-url.ts`                          | CREATE — pure parser                         |
+| `src/lib/post-url.test.ts`                     | CREATE — table-driven cases incl. junk input |
+| `src/server/api/routers/submissions/submit.ts` | CREATE                                       |
+| `src/server/api/routers/submissions/index.ts`  | CREATE — register                            |
+| `src/server/api/root.ts`                       | MODIFY — register router                     |
 
 ## Acceptance Criteria
 

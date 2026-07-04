@@ -11,6 +11,7 @@ You are the orchestrator for a seed data generation iteration. Your job is to pr
 ## Why This Phase Exists
 
 Every application needs realistic sample data to prove it works. Without it:
+
 - Pages render empty even when code is correct.
 - FK chain features (e.g., kitchen pipeline: vendor -> meals -> deliveries -> delivery_items -> meal_containers -> container_recipes -> recipe_ingredients -> ingredients) show nothing because one link is missing.
 - External service placeholders (image URLs, storage URLs) cause runtime errors.
@@ -44,6 +45,7 @@ Launch **feature-builder** agent via the Task tool (subagent_type=feature-builde
 Instruct it to create a seed script with these requirements:
 
 ### Data Requirements
+
 - **Realistic values**: Use actual food names (not "Item 1"), real addresses, plausible prices, proper dates.
 - **Image URLs**: Use publicly accessible image services (e.g., Unsplash with specific photo IDs for food, portraits, etc.). NEVER use placeholder domains that don't resolve.
 - **Enum compliance**: Only use values that exist in the database enum. Query `enum_range` or read schema to verify.
@@ -52,17 +54,21 @@ Instruct it to create a seed script with these requirements:
 - **Idempotent**: Script should be re-runnable (use upserts or delete-then-insert pattern).
 
 ### Structural Requirements
+
 - **Topological order**: Insert parent tables before child tables.
 - **Cross-reference IDs**: Use variables or returning clauses to capture generated IDs for child inserts.
 - **Date-relative data**: Use `new Date()` / `CURRENT_DATE` so data is always "today" when the seed runs.
 - **Multiple vendors/users**: Seed at least 2 distinct data sets to test multi-tenancy and ownership filtering.
 
 ### External Service Fallbacks
+
 - If Supabase/S3/cloud storage URLs are placeholders, use public image CDN URLs directly in the database.
 - Document which services are mocked vs real in a comment at the top of the seed file.
 
 ### Coverage Checklist
+
 For EVERY page/feature in the app, the seed MUST create enough data that:
+
 - [ ] List pages show 5+ items with pagination
 - [ ] Detail pages have complete related data
 - [ ] Dashboard/KPI pages have enough records for meaningful metrics
@@ -101,6 +107,7 @@ After the seed script is created:
 ## Completion
 
 Report:
+
 - Tables seeded and row counts
 - FK chains verified
 - External service fallbacks used

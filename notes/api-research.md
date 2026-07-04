@@ -25,12 +25,12 @@ Live-verified facts for specs 003/005. Sources inline. Anything below marked UNV
 
 ## Third-party providers (all outside platform ToS — accepted-risk decision)
 
-| Platform | Recommended | Price (verified) | Notes |
-|---|---|---|---|
-| X | SocialData.tools | **$0.20/1k**, bulk tweets-by-ids, `views_count` included, failed reqs free (https://docs.socialdata.tools) | best-in-class economics |
-| TikTok | Apify `clockworks/tiktok-scraper` | from $1.70/1k, `postURLs` batch, playCount/digg/comment/share, 91% run success | ScrapeCreators alt: $0.99–1.88/1k |
-| Instagram | Apify `apify/instagram-post-scraper` | from $1.00/1k, by post URL, videoViewCount (likes −1 if hidden) | HikerAPI cheaper but by-URL endpoint slated for deprecation |
-| All-in-one | ScrapeCreators | non-expiring credits $47/25k → $497/500k, per-URL endpoints for all three, no bulk | single-vendor simplicity |
+| Platform   | Recommended                          | Price (verified)                                                                                           | Notes                                                       |
+| ---------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| X          | SocialData.tools                     | **$0.20/1k**, bulk tweets-by-ids, `views_count` included, failed reqs free (https://docs.socialdata.tools) | best-in-class economics                                     |
+| TikTok     | Apify `clockworks/tiktok-scraper`    | from $1.70/1k, `postURLs` batch, playCount/digg/comment/share, 91% run success                             | ScrapeCreators alt: $0.99–1.88/1k                           |
+| Instagram  | Apify `apify/instagram-post-scraper` | from $1.00/1k, by post URL, videoViewCount (likes −1 if hidden)                                            | HikerAPI cheaper but by-URL endpoint slated for deprecation |
+| All-in-one | ScrapeCreators                       | non-expiring credits $47/25k → $497/500k, per-URL endpoints for all three, no bulk                         | single-vendor simplicity                                    |
 
 **Budget envelope at 1–5k posts × 1–4 polls/day**: ~$100–300/mo per-platform-optimized; ~$150–600/mo single-vendor; + X PPU search spend (capped in console).
 

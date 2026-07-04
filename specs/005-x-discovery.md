@@ -27,14 +27,14 @@ Schedule: hourly (`0 * * * *`), same `CRON_SECRET` bearer auth + constant-time c
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/server/db/schema/discovery-state.ts` | CREATE + export from barrel + migration |
-| `src/app/api/cron/discover-x/route.ts` | CREATE |
-| `src/server/discovery/discover-x.ts` | CREATE — orchestration, unit-testable with mocked X client |
-| `src/server/metrics/x-client.ts` | CREATE — shared low-level X fetch used by this + spec 003's provider |
-| `vercel.json` | MODIFY — second cron entry |
-| `.env.example` | MODIFY — `X_DISCOVERY_ENABLED`, `X_SEARCH_QUERY`, `X_DISCOVERY_PAGES_PER_RUN` |
+| File                                      | Action                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------- |
+| `src/server/db/schema/discovery-state.ts` | CREATE + export from barrel + migration                                       |
+| `src/app/api/cron/discover-x/route.ts`    | CREATE                                                                        |
+| `src/server/discovery/discover-x.ts`      | CREATE — orchestration, unit-testable with mocked X client                    |
+| `src/server/metrics/x-client.ts`          | CREATE — shared low-level X fetch used by this + spec 003's provider          |
+| `vercel.json`                             | MODIFY — second cron entry                                                    |
+| `.env.example`                            | MODIFY — `X_DISCOVERY_ENABLED`, `X_SEARCH_QUERY`, `X_DISCOVERY_PAGES_PER_RUN` |
 
 ## Acceptance Criteria
 

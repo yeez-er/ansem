@@ -28,13 +28,13 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/app/api/cron/refresh-metrics/route.ts` | CREATE |
-| `src/server/ingestion/refresh-metrics.ts` | CREATE — pure-ish orchestration extracted from the route for unit tests |
-| `src/server/ingestion/select-due-posts.ts` | CREATE — the bounded query |
-| `vercel.json` | CREATE/MODIFY — cron entry |
-| `.env.example` | MODIFY — `CRON_SECRET`, `REFRESH_BATCH_SIZE` |
+| File                                        | Action                                                                  |
+| ------------------------------------------- | ----------------------------------------------------------------------- |
+| `src/app/api/cron/refresh-metrics/route.ts` | CREATE                                                                  |
+| `src/server/ingestion/refresh-metrics.ts`   | CREATE — pure-ish orchestration extracted from the route for unit tests |
+| `src/server/ingestion/select-due-posts.ts`  | CREATE — the bounded query                                              |
+| `vercel.json`                               | CREATE/MODIFY — cron entry                                              |
+| `.env.example`                              | MODIFY — `CRON_SECRET`, `REFRESH_BATCH_SIZE`                            |
 
 ## Acceptance Criteria
 

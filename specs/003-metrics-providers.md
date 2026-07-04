@@ -9,16 +9,23 @@ A pluggable provider layer that, given a tracked post, returns its current publi
 - Depends on: spec 001. Consumed by: spec 004 (cron calls providers), spec 005 (X discovery shares the X client).
 - **Platform reality** (verified 2026-07-05, details + sources in `notes/api-research.md`): TikTok and Instagram official APIs only expose view counts for the authenticated account's own media (TikTok Display API) or for professional accounts via IG Business Discovery — so public-post metrics by URL come from a third-party data provider. X official API returns `impression_count` for anyone's posts but at $5/1k reads (PPU); SocialData.tools returns the same for $0.20/1k.
 - ⚠️ OPEN DECISION (owner: Yasser): third-party scrapers sit **outside platform ToS** — accepted-risk call. Researched shortlist: X → SocialData.tools ($0.20/1k, bulk by-ids, views included); TikTok → Apify `clockworks/tiktok-scraper` ($1.70/1k, URL batch); IG → Apify `instagram-post-scraper` ($1.00/1k); single-vendor alternative → ScrapeCreators (all three, ~$1–1.9/1k, no bulk). Envelope ~$100–600/mo at 1–5k posts polled 1–4×/day. The interface below is provider-agnostic so the decision touches one adapter file. Until decided, only `MockMetricsProvider` runs in dev/test.
-- **Compliant upgrade paths (post-v1, keep the interface ready)**: TikTok creator OAuth → Display API returns official view counts for the entrant's own videos (natural contest-entry requirement); IG Business Discovery → Reels `view_count` by *username* for professional accounts (needs Meta App Review + business verification — weeks of lead time, start early if chosen).
+- **Compliant upgrade paths (post-v1, keep the interface ready)**: TikTok creator OAuth → Display API returns official view counts for the entrant's own videos (natural contest-entry requirement); IG Business Discovery → Reels `view_count` by _username_ for professional accounts (needs Meta App Review + business verification — weeks of lead time, start early if chosen).
 
 ## Interface
 
 ```ts
 // src/server/metrics/provider.ts
-export type PostRef = { platform: Platform; platformPostId: string; url: string };
+export type PostRef = {
+  platform: Platform;
+  platformPostId: string;
+  url: string;
+};
 export type PostMetrics = {
-  views: bigint; likes: bigint; comments: bigint; shares: bigint;
-  authorHandle: string | null;      // providers may resolve placeholder creators
+  views: bigint;
+  likes: bigint;
+  comments: bigint;
+  shares: bigint;
+  authorHandle: string | null; // providers may resolve placeholder creators
   authorDisplayName: string | null;
   authorAvatarUrl: string | null;
   postedAt: Date | null;
@@ -26,7 +33,11 @@ export type PostMetrics = {
 };
 export type MetricsResult =
   | { ok: true; metrics: PostMetrics }
-  | { ok: false; error: 'NOT_FOUND' | 'RATE_LIMITED' | 'PROVIDER_ERROR'; retryable: boolean };
+  | {
+      ok: false;
+      error: "NOT_FOUND" | "RATE_LIMITED" | "PROVIDER_ERROR";
+      retryable: boolean;
+    };
 
 export interface MetricsProvider {
   readonly platform: Platform;
@@ -46,23 +57,23 @@ export interface MetricsProvider {
 
 ## Env & Config
 
-| Var | Purpose |
-|-----|---------|
-| `METRICS_PROVIDER` | `mock` \| `thirdparty` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.) |
-| `X_BEARER_TOKEN` | official X API (optional) |
-| `THIRDPARTY_API_KEY` / `THIRDPARTY_BASE_URL` | data provider credentials (name will change with the decision) |
+| Var                                          | Purpose                                                                                 |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `METRICS_PROVIDER`                           | `mock` \| `thirdparty` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.) |
+| `X_BEARER_TOKEN`                             | official X API (optional)                                                               |
+| `THIRDPARTY_API_KEY` / `THIRDPARTY_BASE_URL` | data provider credentials (name will change with the decision)                          |
 
 Document all of these in `ralph/AGENTS.md` External Services table with dev fallbacks.
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/server/metrics/provider.ts` | CREATE — types + registry |
-| `src/server/metrics/mock-provider.ts` | CREATE |
-| `src/server/metrics/x-api-provider.ts` | CREATE (feature-flagged) |
+| File                                        | Action                                                        |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| `src/server/metrics/provider.ts`            | CREATE — types + registry                                     |
+| `src/server/metrics/mock-provider.ts`       | CREATE                                                        |
+| `src/server/metrics/x-api-provider.ts`      | CREATE (feature-flagged)                                      |
 | `src/server/metrics/thirdparty-provider.ts` | CREATE (adapter skeleton + mock-backed until provider chosen) |
-| `.env.example` | MODIFY — add vars above |
+| `.env.example`                              | MODIFY — add vars above                                       |
 
 ## Acceptance Criteria
 

@@ -16,6 +16,7 @@ Read these files to understand context:
 3. **Conventions** — Read `CLAUDE.md`, `ralph/AGENTS.md`, and `ralph/accumulated-wisdom.md` (index to topic files under `ralph/wisdom/`) for project rules and patterns.
 
 Identify:
+
 - Which task was implemented
 - What files were changed
 - What the expected behavior should be
@@ -40,6 +41,7 @@ Record all failures, warnings, and coverage gaps.
 Review every changed file in the diff. Check for:
 
 ### Security
+
 - Injection vulnerabilities (SQL, XSS, command injection, path traversal)
 - Auth bypass or missing authorization checks
 - Race conditions in concurrent operations
@@ -48,6 +50,7 @@ Review every changed file in the diff. Check for:
 - Missing input validation at system boundaries
 
 ### Edge Cases
+
 - Null/undefined handling — does the code handle missing data?
 - Empty collections — does it handle `[]` or `null` results?
 - Boundary values — off-by-one, max int, empty strings
@@ -55,6 +58,7 @@ Review every changed file in the diff. Check for:
 - Concurrent access — is shared state protected?
 
 ### Convention Violations
+
 - Returning `{}` or `[]` for "no data" instead of `null`
 - Missing try-catch on external service calls
 - Duplicated logic that should be extracted to shared utility
@@ -63,6 +67,7 @@ Review every changed file in the diff. Check for:
 - Local time functions instead of UTC
 
 ### Performance
+
 - N+1 query patterns (loop with DB call inside)
 - Unbounded loops or recursive calls without limits
 - Missing database indexes for new queries
@@ -70,6 +75,7 @@ Review every changed file in the diff. Check for:
 - Synchronous operations that should be async
 
 ### Test Quality
+
 - Weak assertions — `.toThrow()` without specific error code/type
 - Missing error path tests
 - Tests that don't assert meaningful behavior
@@ -77,6 +83,7 @@ Review every changed file in the diff. Check for:
 - `.skip` or `.only` left in test files
 
 ### Intent Mismatch
+
 - Does the implementation match what the task spec asked for?
 - Are there requirements from the spec that weren't implemented?
 - Are there features added that weren't in the spec?
@@ -86,12 +93,14 @@ Review every changed file in the diff. Check for:
 ## Phase 4: Plan Fixes
 
 For each finding:
+
 1. Classify severity: `critical` | `high` | `medium` | `low`
 2. Write deterministic fix instructions — no ambiguity, no "consider doing X"
 3. Specify exact file, line range, what to change
 4. If a test is needed, write the test name and exact assertion
 
 Rules:
+
 - Only report real issues, not style preferences
 - Every finding must be actionable with a specific fix
 - Don't suggest architectural rewrites — fixes only
@@ -109,6 +118,7 @@ Write the file `HARDEN_SPEC.md` in the project root using this exact format:
 ## Verdict: PASS | NEEDS_FIXES
 
 ## Task Context
+
 - Task: [name from implementation plan]
 - Commit: [hash from git log -1 --format=%h]
 - Files changed: [count]
@@ -116,15 +126,18 @@ Write the file `HARDEN_SPEC.md` in the project root using this exact format:
 ## Findings
 
 ### Finding 1: [title]
+
 - **Severity:** critical | high | medium | low
 - **Category:** security | edge-case | convention | performance | test-quality | intent-mismatch
 - **File:** path/to/file.ts
 - **Lines:** 47-53
 - **Issue:** [what's wrong — one sentence]
 - **Current code:**
-  ```
-  [the problematic snippet]
-  ```
+```
+
+[the problematic snippet]
+
+```
 - **Fix:** [exactly what to change — deterministic, no ambiguity]
 - **Test to add:** [test name + exact assertion, or "none"]
 
@@ -136,6 +149,7 @@ Write the file `HARDEN_SPEC.md` in the project root using this exact format:
 ```
 
 Decision rules:
+
 - **PASS** if zero critical or high findings
 - **NEEDS_FIXES** if any critical or high findings exist
 - Medium and low findings are included for information but don't trigger NEEDS_FIXES

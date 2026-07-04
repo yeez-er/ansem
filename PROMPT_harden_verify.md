@@ -43,12 +43,14 @@ Execute the validation chain:
 Print your verdict to stdout:
 
 **If all critical/high findings are FIXED and validation passes:**
+
 ```
 HARDENING_VERDICT: VERIFIED
 All critical/high findings addressed. Tests pass.
 ```
 
 **If any critical/high findings are NOT_FIXED or PARTIALLY_FIXED:**
+
 ```
 HARDENING_VERDICT: REMAINING_ISSUES
 ```
@@ -59,6 +61,7 @@ Then append unresolved findings to `KNOWN_ISSUES.md` using this format:
 ## Hardening: [commit hash] — [date]
 
 ### [Finding title]
+
 - **Severity:** [severity]
 - **Category:** [category]
 - **File:** [path]
