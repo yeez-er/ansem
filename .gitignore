@@ -1,0 +1,9 @@
+.ralph-logs/
+.claude/agent-memory/
+e2e/test-results/
+e2e/report/
+E2E_FAILURES.md
+STABILIZE_FAILURES.md
+DEPS_REPORT.md
+DEPLOY_REPORT.md
+.ralph-config

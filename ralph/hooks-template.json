@@ -1,0 +1,119 @@
+{
+  "_comment": [
+    "Ralph Wiggum — Claude Code Hooks Template",
+    "Copy relevant hooks to your project's .claude/settings.json",
+    "These enforce golden rules automatically — the agent can't forget them",
+    "",
+    "How it works:",
+    "  PostToolUse hooks run AFTER every tool call of the specified type",
+    "  If the hook exits non-zero, Claude sees the error and auto-fixes",
+    "  This turns 'please do X' into 'you must do X'",
+    "",
+    "Customize the commands for your project's linter/formatter"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "_name": "Lint on file write (JavaScript/TypeScript)",
+        "_when": "After any file is written or edited — catches style violations immediately",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx eslint --fix --no-warn-ignored \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "_name": "Format on file write (Prettier)",
+        "_when": "After any file is written or edited — auto-formats",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "_name": "Typecheck on file write (TypeScript)",
+        "_when": "After any TS/TSX file is written — catches type errors early",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|tsx)$'; then npx tsc --noEmit --pretty 2>&1 | head -20; fi"
+          }
+        ]
+      },
+      {
+        "_name": "Biome lint+format (alternative to ESLint+Prettier)",
+        "_when": "For projects using Biome instead of ESLint/Prettier",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx @biomejs/biome check --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "_name": "Python lint on file write",
+        "_when": "After any Python file is written",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.py$'; then ruff check --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null && ruff format \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi || true"
+          }
+        ]
+      },
+      {
+        "_name": "Go fmt on file write",
+        "_when": "After any Go file is written",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.go$'; then gofmt -w \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "_name": "Block dangerous git commands",
+        "_when": "Prevents force pushes, hard resets, and branch deletions",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_BASH_COMMAND\" | grep -qE '(push.*--force|reset.*--hard|branch.*-D|clean.*-f)'; then echo 'BLOCKED: Dangerous git operation. Ask the user first.' >&2; exit 1; fi"
+          }
+        ]
+      },
+      {
+        "_name": "Block git add -A / git add .",
+        "_when": "Prevents accidentally staging everything (secrets, build artifacts, etc.)",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_BASH_COMMAND\" | grep -qE 'git add (-A|\\.)'; then echo 'BLOCKED: Use git add with specific files, not -A or dot.' >&2; exit 1; fi"
+          }
+        ]
+      },
+      {
+        "_name": "Block secrets in commits",
+        "_when": "Prevents committing files that likely contain secrets",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_BASH_COMMAND\" | grep -qE 'git add.*(\\.(env|pem|key)|credentials|secret)'; then echo 'BLOCKED: Potential secret file detected. Review before committing.' >&2; exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

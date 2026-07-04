@@ -1,0 +1,27 @@
+# API Design Wisdom
+
+<!-- Universal patterns for API design across any project -->
+
+- Procedures returning "no data" MUST return `null`, not `{}` or `[]`. `{}` is truthy in JS. [from: BoxBox]
+- Every external service call (upload, email, payment) MUST be wrapped in try-catch with dev-mode fallback. [from: BoxBox]
+- Database enums: always verify valid values before INSERT. Wrong values cause silent failures. [from: BoxBox]
+- Unique constraints: verify they exist for "one per X" relationships. Duplicates cause logic bugs (e.g., "everything disabled"). [from: BoxBox]
+- `db.update().set()` without `.where()` updates ALL rows — always add source verification regex to guard against this. [from: BoxBox]
+- When registering existing procedures into a router, review their implementation for missing guards — pre-existing bugs become live on registration. [from: BoxBox]
+- Soft-deleted records: ALWAYS filter `isNull(deletedAt)` in ALL queries on tables with `deletedAt`. This was the most frequently flagged issue (7+ times). [from: BoxBox]
+- UTC date handling: use `setUTCHours/getUTCDate/toISOString`, NOT local `setHours`. Local time causes boundary bugs. [from: BoxBox]
+- When narrowing column type (varchar -> enum), fix app code values FIRST to match enum, then switch column type. Never reverse order. [from: BoxBox]
+- Cross-field date validation: always add `.refine(data => data.startDate <= data.endDate)` on Zod schemas with date ranges. [from: BoxBox]
+- Safe division: always check for zero denominator, return 0 (not NaN/Infinity). [from: BoxBox]
+- For secret comparison: always use `crypto.timingSafeEqual`, never `===`. [from: BoxBox]
+- Cursor-based pagination: "timestamp|id" format with fetch limit+1 pattern works well for multi-source activity feeds. [from: BoxBox]
+- Idempotence gate: add a composite `@@unique` on the natural key (e.g. userId, reason, refId) so a double-submitted award/grant cannot double-apply. [from: itqan]
+- Use a snapshot column captured at start-of-operation (e.g. heartsAtStart) for consumption logic, never the mutable live counter. [from: itqan]
+- Ownership scoping: filter by (id, sessionUserId) with userId pulled from the authenticated session, NEVER from input — closes IDOR on composite-key reads/writes. [from: itqan]
+- Bulk mutations (deleteItems, bulkApprove, reorder): verify ownership of EVERY id, not just `ids[0]` — an attacker plants an owned id at index 0 and cross-owner ids after it. Reject mixed-owner arrays, or verify each distinct owner. [from: itqan]
+- Make tRPC input schemas `z.object({...}).strict()` so unexpected fields raise instead of silently stripping — closes mass-assignment vectors a default-strip schema hides. [from: itqan]
+- Array inputs to bulk ops need BOTH `.min(1)` and `.max(N)`; a `.min(1)`-only array lets one request push 10k ids into a single `$transaction` IN-clause (CPU + lock-escalation DoS). Pick a conservative cap (e.g. 200). [from: itqan]
+- State-machine mutations (approve, publish, reject, finalize) must assert the current status is a valid SOURCE state in the WHERE clause; without it a PUBLISHED row can be re-approved, resetting invariants or re-firing downstream effects. [from: itqan]
+- Validate raw JSON / serialized columns on READ with a schema (`safeParse` per row), not only on write. A row poisoned by an out-of-band write, a migration, or schema drift otherwise ships arbitrary JSON straight to clients. The read path must be as strict as the write path — degrade or throw a typed error on a row that fails to parse. [from: itqan]
+- A rate-limiter (or any quota counter) backed by an in-process `Map` is best-effort only: it resets on restart and does not coordinate across instances, so behind a load balancer the effective limit becomes N x instances. Document it as best-effort and move to a shared store (Redis) before any multi-instance deploy; keep the limit logic a pure no-ambient-clock function so the store is swappable. [from: itqan]
+- Every client mutation needs BOTH a success and an error path; an `onSuccess`-only mutation (no `onError`/`catch`) fails silently and the user retries blindly. Map the error to a typed code -> errorCode -> translated message with a GENERIC fallback, never surfacing the raw error string. (ITQAN flagged onSuccess-only 5x before it escalated.) [from: itqan]

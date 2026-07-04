@@ -1,0 +1,17 @@
+# Next.js (App Router) Wisdom
+
+- Pages with server components can't be render-tested in jsdom. Use source verification instead. [from: BoxBox]
+- Dashboard tests need `server-only`, `@clerk/nextjs/server`, `~/env`, `next/server` mocked in setup.ts. [from: BoxBox]
+- `next lint` is deprecated with Next.js 15 + ESLint v9 flat config. Use `eslint .` CLI directly. [from: BoxBox]
+- ESLint --fix auto-applies hundreds of files. Review auto-fixed files for unintended behavioral changes. [from: BoxBox]
+- ESLint flat config: `eslint.config.js` must use ESM (`export default`) not CJS (`module.exports`). [from: BoxBox]
+- `useState(prop)` only captures initial value — use `useEffect` to sync when prop updates from async data. [from: BoxBox]
+- `useEffect` dependencies MUST include route params like `id` when used in effect body. [from: BoxBox]
+- When cloning pages from existing ones, all carry-forward issues propagate — count them explicitly. [from: BoxBox]
+- next/font + Tailwind v4 CSS-variable bridge: verify the variable contract (font var -> CSS var -> utility) with a source-regex test. [from: itqan]
+- KaTeX renders inside `dir="ltr"` islands from a SINGLE dangerouslySetInnerHTML source; don't scatter raw-HTML injection points. [from: itqan]
+- React 19 StrictMode double-mounts effects: a mutation fired on mount (`start.mutate`) runs twice/races. Defer with `setTimeout(0)` + cleanup, or guard with a ref. [from: itqan]
+- Map a tRPC `NOT_FOUND` to Next.js `notFound()` at the RSC data-fetch boundary via a tiny helper (`api.x.get(...).catch(trpcNotFoundTo404)`) so a missing resource renders the not-found UI instead of throwing a 500; let other error codes surface unchanged. [from: itqan]
+- A `loading.tsx` Suspense boundary on a dynamic route streams a 200 shell BEFORE the server component can call `notFound()`, so an unknown-id URL renders the skeleton then 404 content under a 200 status, breaking the not-found contract. If a 404 status matters, move the data fetch out of the streamed boundary (route-group restructure) rather than adding a skeleton. [from: itqan]
+- React 19 StrictMode double-invoke addendum: CI/e2e typically run with StrictMode OFF, so this double-invoke race is dev-only and uncaught by the suite — reproduce it manually in dev, never assume green CI clears it. [from: itqan]
+- App Router server components can't render in jsdom; source-verify the public contract by regex: `params` is a Promise (Next 15+), the RSC import is actually called, tRPC `NOT_FOUND` maps to `notFound()`, logical Tailwind props, and i18n key usage. [from: ITQAN]
