@@ -22,7 +22,7 @@ Schedule: hourly (`0 * * * *`), same `CRON_SECRET` bearer auth + constant-time c
 4. **For each result** (author expansion in the same request — no N+1 lookups):
    - Upsert creator by `(platform='x', handle)`; skip if `is_banned`
    - Insert post `status: 'approved'`, `source: 'x_search'` — `onConflictDoNothing` on `(platform, platform_post_id)` (already-submitted posts stay as they are)
-   - Write an initial `metric_snapshot` from the search result's `public_metrics` (search already returns them — no extra fetch)
+   - Write an initial `metric_snapshot` from the search result's `public_metrics` AND set the post's `latest_*` + `latest_snapshot_at` denorm columns in the same transaction (invariant shared with spec 004: a snapshot write and the denorm update always travel together)
 5. Update `since_id` cursor ONLY after the batch commits (crash-safe: re-run re-reads, UNIQUE gate dedupes).
 
 ## Files to Create/Modify
@@ -34,7 +34,7 @@ Schedule: hourly (`0 * * * *`), same `CRON_SECRET` bearer auth + constant-time c
 | `src/server/discovery/discover-x.ts`      | CREATE — orchestration, unit-testable with mocked X client                    |
 | `src/server/metrics/x-client.ts`          | CREATE — shared low-level X fetch used by this + spec 003's provider          |
 | `vercel.json`                             | MODIFY — second cron entry                                                    |
-| `.env.example`                            | MODIFY — `X_DISCOVERY_ENABLED`, `X_SEARCH_QUERY`, `X_DISCOVERY_PAGES_PER_RUN` |
+| `.env.example` + `src/env.ts`             | MODIFY — `X_DISCOVERY_ENABLED`, `X_SEARCH_QUERY`, `X_DISCOVERY_PAGES_PER_RUN` |
 
 ## Acceptance Criteria
 

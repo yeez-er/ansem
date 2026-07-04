@@ -27,8 +27,8 @@ Signed-in creators submit links to their $ANSEM posts (X, TikTok, Instagram). Th
 - Auth: Clerk `protectedProcedure`; user id from session, never from input.
 - Flow:
   1. `parsePostUrl` → `null` ⇒ `TRPCError { code: 'BAD_REQUEST', message: 'UNSUPPORTED_URL' }`
-  2. Rate limit: max 20 submissions per user per rolling 24h (count in DB; enforced server-side)
-  3. Upsert creator by `(platform, handle)` when handle is known; else create a placeholder creator with the deterministic synthetic handle `placeholder:<platformPostId>` (satisfies NOT NULL + UNIQUE since `platformPostId` is unique per platform; `display_name: null`). Ingestion resolves and merges it (spec 004)
+  2. Rate limit: max 20 submissions per user per rolling 24h, counted as posts actually INSERTED by this user in the window (enforced server-side from the DB). An `alreadyTracked` duplicate does not consume quota — but still requires auth and still returns `FORBIDDEN` for banned creators
+  3. Upsert creator by `(platform, handle)` when handle is known; else create a placeholder creator with the deterministic synthetic handle `placeholder:<platformPostId>` (satisfies NOT NULL + UNIQUE since `platformPostId` is unique per platform; `display_name: null`; `profile_url` = the canonical post URL as a stand-in until resolution). Ingestion resolves and merges it (spec 004)
   4. Insert post with `status: 'pending'`, `source: 'submission'` — on `(platform, platform_post_id)` conflict, return the existing post with `alreadyTracked: true` instead of erroring
   5. Return `{ postId, status, alreadyTracked }`
 - Banned creator (`is_banned`) ⇒ `TRPCError { code: 'FORBIDDEN', message: 'CREATOR_BANNED' }`

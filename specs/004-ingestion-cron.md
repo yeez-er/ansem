@@ -18,7 +18,7 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
    - `ok: true` → INSERT snapshot; UPDATE post `latest_* = metrics`, `latest_snapshot_at = capturedAt`; if the creator is a placeholder (`handle` starts with `placeholder:`) and `authorHandle` resolved, merge deterministically IN THE SAME TRANSACTION: if a creator with `(platform, authorHandle)` already exists, re-point this post's `creator_id` to it and delete the placeholder if it has no remaining posts; otherwise rename the placeholder to the real handle (respecting the UNIQUE constraint — on conflict, the re-point branch applies).
    - `NOT_FOUND` → set post `status = 'removed'` (keep snapshots — history stays on the board's past windows).
    - `RATE_LIMITED` / `PROVIDER_ERROR` → leave post untouched (stalest-first re-queues it next run); increment a per-run error counter.
-5. **Respond** `{ selected, refreshed, removed, errors, durationMs }` — also `console.info` one structured summary line for Vercel logs.
+5. **Respond** `{ selected, refreshed, removed, skipped, errors, durationMs }` (`skipped` = posts on platforms with no configured provider, per spec 003's registry-null rule) — also `console.info` one structured summary line for Vercel logs.
 
 ## Guards
 
@@ -28,12 +28,12 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
 
 ## Files to Create/Modify
 
-| File                                        | Action                                                                  |
-| ------------------------------------------- | ----------------------------------------------------------------------- |
-| `src/app/api/cron/refresh-metrics/route.ts` | CREATE                                                                  |
-| `src/server/ingestion/refresh-metrics.ts`   | CREATE — pure-ish orchestration extracted from the route for unit tests |
-| `src/server/ingestion/select-due-posts.ts`  | CREATE — the bounded query                                              |
-| `vercel.json`                               | CREATE/MODIFY — cron entry                                              |
+| File                                        | Action                                                                     |
+| ------------------------------------------- | -------------------------------------------------------------------------- |
+| `src/app/api/cron/refresh-metrics/route.ts` | CREATE                                                                     |
+| `src/server/ingestion/refresh-metrics.ts`   | CREATE — pure-ish orchestration extracted from the route for unit tests    |
+| `src/server/ingestion/select-due-posts.ts`  | CREATE — the bounded query                                                 |
+| `vercel.json`                               | CREATE/MODIFY — cron entry                                                 |
 | `.env.example` + `src/env.ts`               | MODIFY — `CRON_SECRET`, `REFRESH_BATCH_SIZE`, `MAX_PROVIDER_CALLS_PER_RUN` |
 
 ## Acceptance Criteria
@@ -45,3 +45,4 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
 - [ ] A provider result batch of `[ok, PROVIDER_ERROR, ok]` writes 2 snapshots, leaves the failed post's `latest_snapshot_at` untouched, and reports `errors: 1`
 - [ ] `latest_*` on the post equals the newest snapshot after refresh (the denormalization is written AND spec 007's reader consumes it — no dead columns)
 - [ ] Cron entry exists in `vercel.json` with the exact route path (source verification)
+- [ ] Unconfigured-platform skip path: with no provider for `tiktok` (prod config), a due TikTok post is counted in `skipped`, gets NO snapshot, keeps `latest_snapshot_at: null`, and exactly one structured warning is logged for the run

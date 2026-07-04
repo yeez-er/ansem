@@ -8,7 +8,7 @@ A pluggable provider layer that, given a tracked post, returns its current publi
 
 - Depends on: spec 001. Consumed by: spec 004 (cron calls providers), spec 005 (X discovery shares the X client).
 - **Platform reality** (verified 2026-07-05, details + sources in `notes/api-research.md`): TikTok and Instagram official APIs only expose view counts for the authenticated account's own media (TikTok Display API) or for professional accounts via IG Business Discovery — so public-post metrics by URL come from a third-party data provider. X official API returns `impression_count` for anyone's posts but at $5/1k reads (PPU); SocialData.tools returns the same for $0.20/1k.
-- ⚠️ OPEN DECISION (owner: Yasser): third-party scrapers sit **outside platform ToS** — accepted-risk call. Researched shortlist: X → SocialData.tools ($0.20/1k, bulk by-ids, views included); TikTok → Apify `clockworks/tiktok-scraper` ($1.70/1k, URL batch); IG → Apify `instagram-post-scraper` ($1.00/1k); single-vendor alternative → ScrapeCreators (all three, ~$1–1.9/1k, no bulk). Envelope ~$100–600/mo at 1–5k posts polled 1–4×/day. The interface below is provider-agnostic so the decision touches one adapter file. Until decided, only `MockMetricsProvider` runs in dev/test.
+- **Risk posture — DECIDED 2026-07-05 (Yasser)**: third-party scrapers sit **outside platform ToS**; risk accepted. Approved vendors: X → SocialData.tools ($0.20/1k, bulk by-ids, views included); TikTok → Apify `clockworks/tiktok-scraper` ($1.70/1k, URL batch); IG → Apify `instagram-post-scraper` ($1.00/1k). Envelope ~$100–600/mo at 1–5k posts polled 1–4×/day. ScrapeCreators (all three platforms, ~$1–1.9/1k) is the fallback if a vendor degrades — the interface is provider-agnostic so a swap touches one adapter file. The SocialData + Apify adapters ARE v1 scope (built against recorded fixtures); `MockMetricsProvider` serves dev/test only.
 - **Compliant upgrade paths (post-v1, keep the interface ready)**: TikTok creator OAuth → Display API returns official view counts for the entrant's own videos (natural contest-entry requirement); IG Business Discovery → Reels `view_count` by _username_ for professional accounts (needs Meta App Review + business verification — weeks of lead time, start early if chosen).
 
 ## Interface
@@ -57,29 +57,29 @@ export interface MetricsProvider {
 
 ## Env & Config
 
-| Var                                          | Purpose                                                                                 |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `METRICS_PROVIDER`                           | `mock` \| `thirdparty` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.) |
-| `X_BEARER_TOKEN`                             | official X API (optional)                                                               |
-| `SOCIALDATA_API_KEY`                         | SocialData.tools (X refresh)                                                            |
-| `APIFY_TOKEN`                                | Apify actors (TikTok + Instagram)                                                       |
+| Var                  | Purpose                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `METRICS_PROVIDER`   | `mock` \| `live` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.)       |
+| `X_BEARER_TOKEN`     | official X API (optional)                                                               |
+| `SOCIALDATA_API_KEY` | SocialData.tools (X refresh)                                                            |
+| `APIFY_TOKEN`        | Apify actors (TikTok + Instagram)                                                       |
 
 Document all of these in `ralph/AGENTS.md` External Services table with dev fallbacks.
 
 ## Files to Create/Modify
 
-| File                                        | Action                                                        |
-| ------------------------------------------- | ------------------------------------------------------------- |
-| `src/server/metrics/provider.ts`            | CREATE — types + registry                                     |
-| `src/server/metrics/mock-provider.ts`       | CREATE                                                        |
-| `src/server/metrics/x-api-provider.ts`      | CREATE (feature-flagged)                                      |
-| `src/server/metrics/socialdata-provider.ts` | CREATE — X refresh via SocialData.tools                       |
-| `src/server/metrics/apify-provider.ts`      | CREATE — TikTok + Instagram via Apify actors                  |
-| `.env.example`                              | MODIFY — add vars above                                       |
+| File                                        | Action                                       |
+| ------------------------------------------- | -------------------------------------------- |
+| `src/server/metrics/provider.ts`            | CREATE — types + registry                    |
+| `src/server/metrics/mock-provider.ts`       | CREATE                                       |
+| `src/server/metrics/x-api-provider.ts`      | CREATE (feature-flagged)                     |
+| `src/server/metrics/socialdata-provider.ts` | CREATE — X refresh via SocialData.tools      |
+| `src/server/metrics/apify-provider.ts`      | CREATE — TikTok + Instagram via Apify actors |
+| `.env.example` + `src/env.ts`               | MODIFY — add vars above                      |
 
 ## Acceptance Criteria
 
-- [ ] Registry returns mock provider in dev when no keys configured; throws typed config error in production
+- [ ] Registry returns mock provider in dev when no keys configured; in production an unconfigured platform makes the registry return `null` — assert the caller-visible skip (no snapshot written, one structured warning logged) AND that the mock is never selected in production
 - [ ] Mock provider is deterministic: two calls for the same post id return identical metrics within a fixed fake-timer clock (pin the clock — no ambient `Date.now()` in tests)
 - [ ] X provider maps a mocked 429 response to `{ ok: false, error: 'RATE_LIMITED', retryable: true }` — assert the exact error object
 - [ ] X provider maps a deleted-tweet response to `NOT_FOUND`

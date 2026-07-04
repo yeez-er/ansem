@@ -16,13 +16,13 @@ Public tRPC read surface: ranked boards (daily / all-time, per-platform or combi
 
 - Input: `{ period: z.enum(['daily','alltime']), platform: z.enum(['x','tiktok','instagram','all']).default('all'), cursor: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(100).default(25) }`
 - Daily: per spec 006 semantics — baseline = newest snapshot before `dayWindow(now).start`, latest = newest within window, per-post delta score, summed per creator. Implemented as one SQL query (`DISTINCT ON` / lateral joins), NOT a per-creator N+1 loop; **bound the scan**: consider only posts with `latest_snapshot_at >= window.start − 2d`.
-- All-time: sum `computeScore(latest_*)` per creator from denormalized columns (this is the reader that justifies them).
+- All-time: sum `computeScore(latest_*)` per creator from denormalized columns (this is the reader that justifies them). Creators whose approved posts have ALL never been snapshotted (`latest_snapshot_at IS NULL` across the board) are excluded from ranked boards entirely — a creator must have at least one observed post to hold a rank.
 - Returns `{ entries: RankedEntry[], nextCursor: number | null, window: { start, end } | null }` where `RankedEntry = { rank, creator: PublicCreator, score, views, likes, comments, shares, postCount }` (all counts serialized as strings — bigint doesn't survive JSON). Empty board ⇒ `entries: []` with `nextCursor: null` (a list is a list; the null-not-`{}` rule applies to single-entity lookups).
 
 ### `leaderboard.creator`
 
 - Input: `{ creatorId: z.string().uuid() }`
-- Returns `{ creator: PublicCreator, alltime: ScoreSummary, daily: ScoreSummary, posts: PublicPost[] }` — posts capped at 50, newest first, `PublicPost = { id, url, caption, postedAt, views, likes, comments, shares, score }` (strings for counts). Unknown id or banned creator → **`null`** (not `{}`, not a throw).
+- Returns `{ creator: PublicCreator, alltime: ScoreSummary, daily: ScoreSummary, posts: PublicPost[] }` — posts capped at 50, newest first, `PublicPost = { id, url, caption, postedAt, views, likes, comments, shares, score, latestSnapshotAt: string | null }` (strings for counts; `latestSnapshotAt: null` = never polled, drives spec 008's "pending" state — include it in the DTO allow-list test's exact-keys set). Unknown id or banned creator → **`null`** (not `{}`, not a throw).
 
 ### `leaderboard.recentPosts`
 

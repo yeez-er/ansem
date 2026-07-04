@@ -6,7 +6,7 @@ Clerk authentication for submitters, and an admin surface to keep the board hone
 
 ## Context
 
-- **Two-part spec — build order matters.** Part A (Clerk core) depends only on spec 000 and is a PREREQUISITE for spec 002's `protectedProcedure`. Part B (admin surface) depends on specs 001, 002, 004 plus Part A. Planner must sequence: 000 → 009A → 002 → … → 009B. The public board (spec 007/008) needs NO auth — Clerk gates only `/submit`, `/admin`, and their procedures.
+- **Two-part spec — build order matters.** Part A (Clerk core) depends only on spec 000 and is a PREREQUISITE for spec 002's `protectedProcedure`. Part B (admin surface) depends on specs 001, 002, 003, 004 plus Part A (003 because `admin.refreshPost` calls the provider layer). Planner must sequence: 000 → 009A → 002 → … → 009B. The public board (spec 007/008) needs NO auth — Clerk gates only `/submit`, `/admin`, and their procedures.
 - Admin = Clerk user whose id is in the `ADMIN_USER_IDS` env allow-list (comma-separated). Checked **server-side in a shared `adminProcedure` middleware** — the `/admin` page hiding is UX, never the security boundary. v1 has no roles table; revisit if admins multiply.
 
 ## Part A: Clerk Core (prerequisite for spec 002)
