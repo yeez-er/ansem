@@ -1,131 +1,53 @@
 # Spec Review
 
 **Status:** NEEDS_REVISION
-**Date:** 2026-07-05
+**Date:** 2026-07-05 (re-review; prior review 2026-07-05, fixes landed in f0442e8)
 **Specs reviewed:** 000-app-scaffold, 001-data-model, 002-url-submission, 003-metrics-providers, 004-ingestion-cron, 005-x-discovery, 006-scoring, 007-leaderboard-api, 008-leaderboard-ui, 009-auth-admin, 010-seed-data
 
-Overall: these specs are high quality — detailed acceptance criteria, strong edge-case coverage, security/atomicity called out explicitly, and the weekly→daily migration is clean (the only remaining "weekly" mention, in spec 006, is a deliberate "add later" note, not a contradiction). The revisions below are targeted: 4 items need a human decision, plus a handful of minor authoring fixes. None indicate a rethink — they're the ambiguities that would otherwise surface as wasted build iterations.
+## Prior-Findings Verification (all 4 decisions resolved ✓)
 
-## Per-Spec Findings
+1. **Auth core ordering** — RESOLVED. 009 split into Part A (Clerk core) / Part B (admin surface); 002 now depends on 009 Part A; sequencing `000 → 009A → 002 → … → 009B` stated in 009's context. Consistent.
+2. **Metrics vendors** — RESOLVED (SocialData.tools for X refresh, Apify for TikTok/IG; unconfigured platform = pending state, never mock in prod). Two authoring leftovers from this edit remain — see Revision Items #1 and #2.
+3. **Placeholder-creator identity** — RESOLVED. Deterministic `placeholder:<platformPostId>` handle (002), merge transaction fully specified in 004 (re-point on conflict, delete empty placeholder, rename otherwise). Consistent across 001↔002↔004↔010; each placeholder can only ever own one post, so the merge cases are complete.
+4. **`claimed_by_user_id`** — RESOLVED. Dropped from the 001 schema; the cut is documented in Conventions ("re-add WITH the feature").
+5. **Env-var registration (prior Cross-Spec #2)** — RESOLVED for 002 and 004 (both now register `.env.example` + `src/env.ts`). Same drift class persists mildly in 003/005 — see Minor Notes.
+6. **Zero-in-window branch (prior Cross-Spec #5)** — RESOLVED. 006 pins "baseline but zero in-window snapshots ⇒ contributes exactly 0, no cross-window fallback"; 007 has the matching AC.
+7. **006 ranking prose** — RESOLVED ("standard competition ranks (1, 2, 2, 4)").
 
-### 000-app-scaffold.md
+## Revision Items (must fix before planning — all mechanical, no new human decisions)
 
-**Status:** APPROVED
+1. **[003] Acceptance criterion contradicts the revised prose.** AC #1 still reads "throws typed config error in production", but the fixed prose (line ~50) now specifies: unconfigured platform ⇒ registry returns `null`, ingestion skips, "never a hard crash". Under TDD the builder implements the AC first — this cements the rejected fail-fast behavior. Fix: rewrite AC #1 to "Registry returns mock in dev when no keys configured; returns `null` for an unconfigured platform in production (assert no throw)".
+2. **[003] Stale "⚠️ OPEN DECISION" banner.** Context line ~11 still says the vendor choice is open and "Until decided, only `MockMetricsProvider` runs in dev/test", while Implementations line ~55 says "DECIDED 2026-07-05" and ships both adapters in v1 against recorded fixtures. Two developers would disagree on whether the adapters are v1 scope. Fix: reword the banner to a decided/risk-accepted note (the ToS-risk acceptance is worth keeping as a record) and delete the "until decided" sentence.
+3. **[007↔008] The pending state is unrenderable through the specified DTOs.** 008 (added in the fix) requires posts with `latest_snapshot_at: null` to render an em-dash "pending", "never a fake ranked 0" — but 007's `PublicPost` (`{ id, url, caption, postedAt, views, likes, comments, shares, score }`) and `RankedEntry` carry no snapshot-recency field, so the UI cannot distinguish "0 views" from "never polled". The DTOs are allow-list-constructed with an exact-keys test, so this must be pinned now, not discovered mid-UI-build. Recommended fix: add `latestSnapshotAt: string | null` to `PublicPost` (and the exact-keys test); specify that creators whose approved posts ALL have `latest_snapshot_at: null` are excluded from both boards (daily already excludes them via the `>= window.start − 2d` bound — SQL `NULL` fails the comparison; all-time must state the exclusion explicitly, otherwise they surface as ranked 0s, which 008 forbids).
 
-- Solid milestone-zero frame. Only `publicProcedure` is scaffolded here; `protectedProcedure`/`adminProcedure` are deferred to spec 009 — see Cross-Spec #1, which this ordering creates.
-- `.env.example` seed list (line 20) omits `AUTO_APPROVE_SUBMISSIONS` (spec 002) and `MAX_PROVIDER_CALLS_PER_RUN` (spec 004). Line 21 says "every var known so far" and each spec adds its own as it lands — but 002 and 004 don't list `.env.example`/`src/env.ts` in their Files-to-Modify, so the convention isn't enforced. See Cross-Spec #2.
+## Minor Notes (fix opportunistically; none block planning once the three items above land)
 
-### 001-data-model.md
-
-**Status:** APPROVED (with one clarification, Cross-Spec #3)
-
-- Schema is thorough: bigint counts end-to-end, UNIQUE on natural keys (not the uuid pk), append-only snapshots, `(post_id, captured_at desc)` index, `latest_*` denorm with both a writer (004) and reader (007). No dead-index/UNIQUE duplication.
-- `handle` is `text NOT NULL` + `UNIQUE(platform, handle)`. This collides with spec 002's handle-less placeholder creators (IG shortcode submissions). See Cross-Spec #3.
-- `claimed_by_user_id` (line 32) is never written or read in any v1 spec — a dead column. See Decision #4 / Deferred Items.
-- `posts.platform` is denormalized from creator with "must always match" but no DB-level enforcement (no composite FK). Acceptable for v1; note it as an invariant the writers (002/004/005) must uphold.
-
-### 002-url-submission.md
-
-**Status:** NEEDS_REVISION
-
-- Uses Clerk `protectedProcedure` and a session user id, but "Depends on:" lists only spec 001. The auth core that provides `protectedProcedure` + Clerk context lives in spec 009. AC "Unauthenticated call fails with UNAUTHORIZED" cannot be built until that core exists. See Cross-Spec #1 (Decision #1).
-- Placeholder-creator path (line 31, "else create placeholder creator") is underspecified: what `handle` value satisfies `NOT NULL` + `UNIQUE(platform, handle)` when the submitted URL carries no handle (IG shortcodes)? See Cross-Spec #3 (Decision #3).
-- Introduces `AUTO_APPROVE_SUBMISSIONS` env var but doesn't list `.env.example`/`src/env.ts` in Files-to-Modify. Minor (Cross-Spec #2).
-- Minor: whether a deduped (`alreadyTracked`) attempt counts toward the 20/24h rate limit is unstated. Low impact; pick one and note it.
-
-### 003-metrics-providers.md
-
-**Status:** APPROVED (blocked-but-buildable on an OPEN DECISION)
-
-- Provider interface is clean, never-throws, typed results, bigint round-trip, deterministic mock with pinned clock. All v1 AC are satisfiable on mock + optional X official API.
-- The third-party vendor choice is an explicit OPEN DECISION (owner: Yasser). It does NOT block MVP build (TikTok/IG run on `MockMetricsProvider` until decided), but it DOES decide what real data the board shows at launch. See Decision #2.
-- Minor: `getProvider` "throws a typed startup error in production" when a platform's config is missing — confirm that's desired even if v1 intentionally ships mock-only for TikTok/IG (otherwise a prod deploy with no third-party key would fail fast on boot). Tie to Decision #2.
-
-### 004-ingestion-cron.md
-
-**Status:** APPROVED
-
-- Constant-time secret compare, stalest-first bounded selection, per-post transaction, `NOT_FOUND`→removed with snapshot retention, degraded-mode at >50% errors, idempotent (scoring reads deltas, never sums). Strong.
-- `MAX_PROVIDER_CALLS_PER_RUN` (Guards) is not in the `.env.example` Files-to-Modify list. Minor (Cross-Spec #2).
-- Placeholder→real creator merge (line 18, "merge-on-conflict with existing (platform, handle) creator") is the resolution half of Cross-Spec #3; it needs the placeholder-identity scheme defined in 001/002 to be implementable, and needs to specify re-pointing posts when two placeholders collapse into one real creator.
-
-### 005-x-discovery.md
-
-**Status:** APPROVED
-
-- Feature-flagged off by default, cursor in `discovery_state`, page budget, crash-safe cursor advance, idempotent via UNIQUE gates, 429→degraded. Cashtag risk is explicitly flagged as UNVERIFIED with a smoke-test-first fallback. Well scoped.
-- Confirm `discovery_state` migration + barrel export land with this spec (it does say so) — it's the one schema table defined outside spec 001, so verify registration.
-
-### 006-scoring.md
-
-**Status:** APPROVED (one clarity nit)
-
-- Pure, bigint-only, UTC-only `dayWindow`, clamp-to-zero deltas, competition ranking with a full tie-break chain. Excellent testability.
-- Line 34 wording: "Assigns dense ranks (1,2,2,4 → no: standard competition ranking 1,2,2,4)" is self-contradicting on the term "dense" (dense ranking is 1,2,2,3). Intent is clear from AC line 51 (standard competition ranking 1,2,2,4) — just tidy the prose so it doesn't mislead.
-- Define the "no in-window snapshot" case explicitly (a post whose newest snapshot predates today's window): contribution = 0 / latest defaults to baseline. It's implied and covered by seed AC 010, but 007's prose ("latest = newest within the window") leaves the null-latest branch undefined. See Cross-Spec #5.
-
-### 007-leaderboard-api.md
-
-**Status:** APPROVED (depends on Cross-Spec #5 clarification)
-
-- Public read-only, server-side ban/status filtering, allow-list DTOs with an exact-keys test, bigint-as-strings, cursor pagination with total-order tie-break, single-query daily board (no N+1), scan bounded to `window.start − 2d`, Next-native cache keyed on all inputs, `now` read once per request. Very complete.
-- "latest = newest within window" (line 17) needs the null-latest branch pinned (Cross-Spec #5) so two implementers can't diverge (one using newest-in-window, one using `latest_*`). Both yield the same score IF the fallback is specified.
-
-### 008-leaderboard-ui.md
-
-**Status:** APPROVED
-
-- Design direction is concrete enough to serve as the design spec + visual-verify source. Reuses `parsePostUrl` from 002 (no client copy — confirm it stays import-safe in a client component, which it is since it's pure). URL-state controls, empty/error states, truthiness-safe `stat-number` (0 renders 0), token mint in one constant, a11y on icon controls, both mutation callbacks. Nothing blocking.
-- Depends on seed (010) landing before any UI task — ordering is stated; the plan must honor it.
-
-### 009-auth-admin.md
-
-**Status:** NEEDS_REVISION (structural — Cross-Spec #1)
-
-- Bundles the auth CORE (Clerk middleware + tRPC context + `protectedProcedure`) together with the admin SURFACE (`adminProcedure`, admin router, `/admin` UI). The core is a prerequisite for spec 002; the surface is not. As written, a planner following "Depends on" edges places 002 before 009 and breaks. See Decision #1.
-- `admin.refreshPost` uses the spec 003 provider but "Depends on:" lists 001/002/004 (003 only transitively via 004). Add 003 explicitly.
-- Strong AC otherwise: server-side admin gate, empty-`ADMIN_USER_IDS`⇒no admins, `PRECONDITION_FAILED` on re-review, atomic ban+bulk-reject with a distinct-transaction race test, no auto-closing dialog on async actions.
-
-### 010-seed-data.md
-
-**Status:** APPROVED
-
-- Idempotent by natural key, deterministic (no `Math.random`/ambient `Date.now`), story-shaped (daily winner ≠ all-time winner, banned creator with high-scoring posts, a placeholder creator, a post with all snapshots pre-window for the daily-0 test), verifies through the real query layer. Exemplary.
-- Depends on the placeholder-creator scheme (Cross-Spec #3) to seed its "placeholder creator with display_name: null" without violating `handle NOT NULL`.
+- **[004] No AC covers the unconfigured-platform skip path** that 003 now defines (registry `null` ⇒ platform's posts skipped, ONE structured warning per run, not counted as errors, `latest_snapshot_at` untouched). Add one AC to 004 so the pending path is tested, not just described.
+- **[005] Discovery writes the initial snapshot but not the `latest_*` denorm.** Step 4 inserts a `metric_snapshot` from search-result metrics without updating the post's `latest_*`/`latest_snapshot_at`, violating 001's "denormalized from newest snapshot" semantics for up to one cron cycle and making 008's pending indicator misread a post that HAS a snapshot. One-line fix: set the denorm columns in the same insert transaction.
+- **[002] Placeholder creator's `profile_url` is unspecified.** `creators.profile_url` is `NOT NULL`, but a handle-less (placeholder) creation has no profile URL. Pick one (recommended: the canonical post URL until the 004 merge resolves the real handle) and state it.
+- **[008/010] Placeholder display fallback undefined.** 010 seeds a placeholder creator to "prove placeholder rendering", but 008 never says what renders for a `placeholder:<id>` handle with `display_name: null` (raw synthetic handle vs. an "Unresolved creator" label). Pick one and add it to 008's board-table bullet.
+- **[009] Part B "Depends on" still omits 003** even though `admin.refreshPost` calls the spec 003 provider directly (003 is only reachable transitively via 004). Carried from the prior review; sequencing happens to work, but the metadata is incomplete. Add 003.
+- **[002] `alreadyTracked` vs. the 20/24h rate limit** remains unstated (carried, low impact). "Count in DB" implies deduped attempts don't count (no row inserted); one sentence would pin it — note that the flow checks the limit (step 2) before dedup (step 4), so a deduped attempt still consumes a check but not a slot.
+- **[003/005] Files-to-Modify lists `.env.example` but not `src/env.ts`** for the vars each spec introduces (`SOCIALDATA_API_KEY`/`APIFY_TOKEN`/`METRICS_PROVIDER`; `X_DISCOVERY_*`). 000's AC only checks `.env.example ⊇ env.ts`, which doesn't catch a var missing from `env.ts`. Add the `src/env.ts` modify line to both, matching 004's pattern.
 
 ## Cross-Spec Issues
 
-1. **Auth core is entangled with the admin surface (002 ↔ 009).** `protectedProcedure` + the Clerk-derived tRPC context (`{ userId, isAdmin }`) are created in spec 009, but spec 002's `submissions.submit` needs `protectedProcedure` and a session. Spec 002's dependency metadata omits this. Resolution options in Decision #1. This is the single most important item — it changes plan sequencing.
-
-2. **Env-var registration drift.** `AUTO_APPROVE_SUBMISSIONS` (002) and `MAX_PROVIDER_CALLS_PER_RUN` (004) are referenced but their owning specs don't list `.env.example` / `src/env.ts` in Files-to-Modify. Spec 000's convention ("every spec adds its vars as they land") only holds if each spec states the modify. Add the modify line to 002 and 004. Low effort, prevents silent config drift.
-
-3. **Placeholder-creator identity is undefined and conflicts with the schema (001 ↔ 002 ↔ 004).** `creators.handle` is `NOT NULL` + `UNIQUE(platform, handle)`, but 002 creates placeholder creators for handle-less submissions (IG shortcodes) and 004 later merges them to the real handle. Undefined: (a) what handle a placeholder gets at creation, (b) how a collision merges when two placeholders resolve to the same real handle, and (c) re-pointing the affected posts' `creator_id` during that merge. Resolution in Decision #3.
-
-4. **`claimed_by_user_id` is a dead column in v1.** Present in the schema (001) but never written or read by any v1 spec (claim flow is explicitly future). Per project rules, dead denormalized columns should be dropped or formally accepted as debt. Resolution in Decision #4.
-
-5. **Daily "no in-window snapshot" branch is undefined (006 ↔ 007).** For a post whose newest snapshot predates today's window, "latest = newest within window" has no value. Specify the fallback (contribution 0 / latest defaults to baseline) so implementers converge. Covered indirectly by seed AC 010 but not stated in prose.
+- Revision Item #3 (007↔008 pending discriminator) is the only open cross-spec issue. Prior cross-spec issues #1–#5 are all resolved (see verification above).
 
 ## Missing Coverage
 
-- **Anti-gaming / fraud detection** (velocity-anomaly on snapshot deltas) — intentionally deferred to a future spec 011 (noted in api-research). Correct YAGNI for MVP; called out so it's a conscious omission, not a gap.
-- **Creator claim flow** — no spec; `claimed_by_user_id` exists but is inert (see #4).
-- **Audit trail** — 009 uses structured `console.info` audit lines and explicitly defers a real audit table to KNOWN_ISSUES. Acceptable.
-- No error-monitoring/observability spec beyond structured logs — acceptable for v1.
+- Unchanged from prior review: anti-gaming (future spec 011), creator claim flow (cut with its column), real audit table (KNOWN_ISSUES debt), observability beyond structured logs — all conscious, acceptable omissions for MVP.
 
 ## Deferred Items (YAGNI) — correctly out of scope for MVP
 
-- Third-party TikTok/IG metrics provider — pending owner decision; MVP runs on mock (Decision #2).
 - Compliant API upgrade paths (TikTok creator OAuth, IG Business Discovery) — post-v1, interface kept ready.
-- Per-platform scoring weights — deferred (006); single `DEFAULT_WEIGHTS` in v1.
+- Per-platform scoring weights — single `DEFAULT_WEIGHTS` in v1.
 - Full-archive X search, roles table, real audit table, anti-gaming spec 011.
 
-## Decisions Needed Before Planning (human input)
+## Ambiguities Needing Human Input
 
-1. **Auth core ordering (Cross-Spec #1).** Recommended: split spec 009 into "Clerk core" (middleware + tRPC context + `protectedProcedure`) built as a prerequisite before spec 002, and "admin surface" (`adminProcedure` + admin router + `/admin` UI) after. Alternatives: (b) sequence all of 009 before 002; (c) have 002 create a minimal `protectedProcedure` that 009 extends.
-2. **v1 metrics scope for TikTok/Instagram (Cross-Spec / spec 003).** Recommended: launch v1 with mock-only metrics for TikTok/IG and real metrics for X (official API), wiring the chosen third-party provider later in one adapter file. Alternatives: (b) block v1 until a provider is chosen and real TikTok/IG data works; (c) X-only board for v1, drop TikTok/IG until a provider exists.
-3. **Placeholder-creator handle scheme (Cross-Spec #3).** Recommended: give placeholders a deterministic synthetic handle (e.g., `placeholder:<platformPostId>`), then at ingestion (004) resolve to the real handle and merge/re-point posts on `(platform, handle)` conflict. Alternatives: (b) make `handle` nullable and key uniqueness differently for placeholders; (c) reject handle-less submissions in v1 (drop IG shortcode support until resolvable).
-4. **`claimed_by_user_id` dead column (Cross-Spec #4).** Recommended: drop it from the v1 schema and re-add when the claim flow ships. Alternative: keep it and log it as accepted debt in KNOWN_ISSUES with a comment.
+None. All three revision items have a single obvious fix (the recommendations above); no product or architecture decision is open. This is why no clarifying questions were raised this round.
 
 ## Verdict Rationale
 
-Specs are strong and largely buildable, but four items need a human decision before planning — one structural (auth core vs admin surface ordering, #1), one product-scope (real vs mock TikTok/IG metrics at launch, #2), and two schema-integrity (placeholder-creator identity #3, dead column #4) — plus minor authoring fixes (env-var modify lines, the ranking prose nit, the daily null-latest branch). Resolving these now prevents the plan from sequencing 002 before its auth dependency and from generating placeholder creators that violate the schema.
+All four human decisions from the prior review landed correctly and consistently. NEEDS_REVISION rests on three mechanical authoring fixes: a spec-003 AC that still encodes the rejected fail-fast behavior (a TDD builder would test-and-cement the wrong branch), the stale OPEN DECISION banner contradicting the DECIDED vendors, and the 007 DTOs lacking the field 008's new pending state needs (allow-list DTOs make this a spec-time decision, not a build-time patch). ~15 minutes of edits, then re-run `./loop.sh spec-review` for an expected APPROVED.
