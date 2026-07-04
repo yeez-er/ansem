@@ -16,10 +16,12 @@ Signed-in creators submit links to their $ANSEM posts (X, TikTok, Instagram). Th
 | Platform  | Accepted forms                                                        | Canonical id                                                                                                | Canonical URL                                 |
 | --------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
 | x         | `x.com/<handle>/status/<id>`, `twitter.com/...`, with query junk      | numeric status id                                                                                           | `https://x.com/<handle>/status/<id>`          |
-| tiktok    | `tiktok.com/@<handle>/video/<id>`, `vm.tiktok.com/<code>` short links | numeric video id (short links: resolve at ingestion, see spec 003 — parser returns `needsResolution: true`) | `https://www.tiktok.com/@<handle>/video/<id>` |
+| tiktok    | `tiktok.com/@<handle>/video/<id>`, `vm.tiktok.com/<code>` short links | numeric video id (short links: parser returns `needsResolution: true` + `platformPostId: null`; the SUBMIT procedure resolves them — see below) | `https://www.tiktok.com/@<handle>/video/<id>` |
 | instagram | `instagram.com/reel/<shortcode>`, `/p/<shortcode>`, with query junk   | shortcode                                                                                                   | `https://www.instagram.com/reel/<shortcode>/` |
 
-`ParsedPost = { platform, platformPostId, handle: string | null, canonicalUrl, needsResolution?: boolean }`. Strip tracking params, lowercase handles, trim whitespace. Handle is `null` when the URL form doesn't carry it (IG shortcode links).
+`ParsedPost = { platform, platformPostId: string | null, handle: string | null, canonicalUrl, needsResolution?: boolean }` — `platformPostId` is `null` ONLY when `needsResolution` is true (TikTok short links). Strip tracking params, lowercase handles, trim whitespace. Handle is `null` when the URL form doesn't carry it (IG shortcode links).
+
+**Short-link resolution happens at submit time, server-side (DECIDED per spec-review round 3, option a)**: when the parser returns `needsResolution`, the submit procedure follows the redirect ONCE (`fetch` with `redirect: 'manual'`, read the `Location` header only, 5s timeout, wrapped in try-catch) and re-parses the resolved URL. The database only ever stores canonical numeric video ids — `needsResolution` never reaches persistence, and the same video submitted as a short link and as a canonical link dedupes to ONE row. Resolution failure (network error, non-TikTok redirect target, unparseable result) → `TRPCError { code: 'BAD_REQUEST', message: 'UNRESOLVABLE_URL' }`.
 
 ## tRPC Procedure: `submissions.submit`
 
@@ -54,3 +56,5 @@ Upsert + insert run in ONE transaction (concurrent duplicate submissions must no
 - [ ] 21st submission in 24h fails with `.toMatchObject({ code: 'TOO_MANY_REQUESTS' })` — assert the code, not just "throws"
 - [ ] Unauthenticated call fails with code `UNAUTHORIZED`
 - [ ] Banned creator's post fails with code `FORBIDDEN`
+- [ ] Short-link dedupe: the same video submitted via `vm.tiktok.com/<code>` and via its canonical URL yields ONE post row (second returns `alreadyTracked: true`; mock the redirect-follow; assert row count)
+- [ ] Unresolvable short link (mocked network failure and mocked redirect to a non-TikTok host) fails with `.toMatchObject({ code: 'BAD_REQUEST' })` and message `UNRESOLVABLE_URL`; no creator or post row is created

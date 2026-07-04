@@ -45,7 +45,7 @@ Every mutation returns the updated entity (client invalidates queries). Every ad
 | `src/server/api/routers/admin/{pending-posts,review-post,ban-creator,refresh-post}.ts`  | CREATE                                                     |
 | `src/server/api/routers/admin/index.ts` + `root.ts`                                     | CREATE/MODIFY — register                                   |
 | `src/app/admin/layout.tsx`, `src/app/admin/page.tsx`, `src/app/admin/creators/page.tsx` | CREATE                                                     |
-| `.env.example`                                                                          | MODIFY — Clerk keys, `ADMIN_USER_IDS`                      |
+| `.env.example` + `src/env.ts`                                                           | MODIFY — Clerk keys, `ADMIN_USER_IDS`                      |
 
 ## Acceptance Criteria
 

@@ -52,17 +52,17 @@ export interface MetricsProvider {
 ## Implementations (v1)
 
 1. **`MockMetricsProvider`** (all platforms) — deterministic pseudo-random growth seeded by `platformPostId` (same post → same curve), so dev/e2e leaderboards are stable across runs. Always available; selected when `METRICS_PROVIDER=mock` or env keys are absent in dev.
-2. **`SocialDataProvider`** (x — refresh path) — adapter over SocialData.tools bulk tweets-by-ids (`views_count` + engagement, $0.20/1k, see `notes/api-research.md`). **`ApifyProvider`** (tiktok, instagram) — adapter over Apify actors `clockworks/tiktok-scraper` (batch `postURLs`) and `apify/instagram-post-scraper`. DECIDED 2026-07-05 (Yasser approved the recommended vendors). Each adapter is one thin file behind the same interface. The Apify adapter resolves `vm.tiktok.com` short links (spec 002 `needsResolution`) to canonical video ids on first fetch. Adapters are built and tested against recorded fixtures in v1; live keys are set at deploy time.
+2. **`SocialDataProvider`** (x — refresh path) — adapter over SocialData.tools bulk tweets-by-ids (`views_count` + engagement, $0.20/1k, see `notes/api-research.md`). **`ApifyProvider`** (tiktok, instagram) — adapter over Apify actors `clockworks/tiktok-scraper` (batch `postURLs`) and `apify/instagram-post-scraper`. DECIDED 2026-07-05 (Yasser approved the recommended vendors). Each adapter is one thin file behind the same interface. (Short links never reach providers — spec 002 resolves them server-side at submit time, so every `PostRef` carries a canonical id.) Adapters are built and tested against recorded fixtures in v1; live keys are set at deploy time.
 3. **`XApiMetricsProvider`** (x) — official X API v2 `GET /2/tweets` batch lookup (up to 100 ids/call) reading `public_metrics` (`impression_count`, `like_count`, `reply_count`, `retweet_count + quote_count` as shares). Enabled only when `X_BEARER_TOKEN` is set. Honors 429s by returning `RATE_LIMITED` with `retryable: true`.
 
 ## Env & Config
 
-| Var                  | Purpose                                                                                 |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| `METRICS_PROVIDER`   | `mock` \| `live` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.)       |
-| `X_BEARER_TOKEN`     | official X API (optional)                                                               |
-| `SOCIALDATA_API_KEY` | SocialData.tools (X refresh)                                                            |
-| `APIFY_TOKEN`        | Apify actors (TikTok + Instagram)                                                       |
+| Var                  | Purpose                                                                           |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `METRICS_PROVIDER`   | `mock` \| `live` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.) |
+| `X_BEARER_TOKEN`     | official X API (optional)                                                         |
+| `SOCIALDATA_API_KEY` | SocialData.tools (X refresh)                                                      |
+| `APIFY_TOKEN`        | Apify actors (TikTok + Instagram)                                                 |
 
 Document all of these in `ralph/AGENTS.md` External Services table with dev fallbacks.
 

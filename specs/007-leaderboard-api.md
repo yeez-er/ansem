@@ -22,7 +22,7 @@ Public tRPC read surface: ranked boards (daily / all-time, per-platform or combi
 ### `leaderboard.creator`
 
 - Input: `{ creatorId: z.string().uuid() }`
-- Returns `{ creator: PublicCreator, alltime: ScoreSummary, daily: ScoreSummary, posts: PublicPost[] }` — posts capped at 50, newest first, `PublicPost = { id, url, caption, postedAt, views, likes, comments, shares, score, latestSnapshotAt: string | null }` (strings for counts; `latestSnapshotAt: null` = never polled, drives spec 008's "pending" state — include it in the DTO allow-list test's exact-keys set). Unknown id or banned creator → **`null`** (not `{}`, not a throw).
+- Returns `{ creator: PublicCreator, alltime: ScoreSummary, daily: ScoreSummary, posts: PublicPost[] }` where `ScoreSummary = { score, views, likes, comments, shares, postCount }` (counts as strings, same serialization rule as entries) — posts capped at 50, newest first, `PublicPost = { id, url, caption, postedAt, views, likes, comments, shares, score, latestSnapshotAt: string | null }` (strings for counts; `latestSnapshotAt: null` = never polled, drives spec 008's "pending" state — include it in the DTO allow-list test's exact-keys set). Unknown id or banned creator → **`null`** (not `{}`, not a throw).
 
 ### `leaderboard.recentPosts`
 

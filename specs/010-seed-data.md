@@ -6,7 +6,7 @@ One idempotent script that fills a dev/e2e database with a realistic, story-shap
 
 ## Context
 
-- Depends on: specs 001, 006 (uses `computeScore`/`dayWindow` to make the numbers coherent). Consumed by: everything downstream.
+- Depends on: specs 001, 006, 007 (uses `computeScore`/`dayWindow` for coherent numbers and smoke-checks through 007's real query layer — seed must be planned AFTER the leaderboard queries exist). Consumed by: everything downstream.
 - Idempotent by construction: every insert targets a natural key (`(platform, handle)`, `(platform, platform_post_id)`) with `onConflictDoNothing`/upsert — safe to re-run, never duplicates. Deterministic: fixed handles, fixed post ids, metric curves seeded by post id (no `Math.random()`).
 
 ## Dataset Shape (the story)

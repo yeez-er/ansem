@@ -23,8 +23,8 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 
 - Header: brand, nav (`Leaderboard`, `Submit`, Clerk sign-in button)
 - Controls row: period toggle (**Today** default / **All Time**) + platform filter tabs (All / X / TikTok / Instagram). Both are URL state (`?period=daily&platform=all`) — shareable, back-button-safe. Small caption under the toggle: "resets 00:00 UTC" with a live countdown.
-- Board table: rank, creator (avatar, handle, platform badge), score, views, likes, comments, shares, posts count. Row click → creator page. "Load more" pagination via `nextCursor`. Posts never yet snapshotted (`latestSnapshotAt: null` in the DTO — provider unconfigured or first poll pending) display an em-dash "pending" state, never a fake ranked 0. Placeholder creators (handle starts with `placeholder:`) render as "Unclaimed creator" + platform badge — never the raw synthetic handle.
-- Right rail (desktop) / below (mobile): **Recent posts** ticker from `leaderboard.recentPosts` — thumbnail-less cards: platform badge, handle, truncated caption, view count, links out to the post (`target=_blank rel=noopener`).
+- Board table: rank, creator (avatar, handle, platform badge), score, views, likes, comments, shares, posts count. Row click → creator page. "Load more" pagination via `nextCursor`. Placeholder creators (handle starts with `placeholder:`) render as "Unclaimed creator" + platform badge — never the raw synthetic handle.
+- Right rail (desktop) / below (mobile): **Recent posts** ticker from `leaderboard.recentPosts` — thumbnail-less cards: platform badge, handle, truncated caption, view count, links out to the post (`target=_blank rel=noopener`). Anywhere post-level stats render (ticker cards, creator-page posts table): `latestSnapshotAt: null` in the DTO (provider unconfigured or first poll pending) displays an em-dash "pending" state, never a fake 0.
 - **Empty state**: bull glyph + "No posts on the board yet. Be the first — submit your post." + CTA to `/submit`. **Error state**: friendly retry card, never a raw error string.
 
 ### `/creator/[id]`
