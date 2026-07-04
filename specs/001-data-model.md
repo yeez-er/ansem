@@ -29,7 +29,6 @@ The relational backbone for a cross-platform creator leaderboard: creators, thei
 | `avatar_url`                | text, null                        |                                                                |
 | `profile_url`               | text, not null                    |                                                                |
 | `is_banned`                 | boolean, not null, default false  | banned creators are excluded from all leaderboards server-side |
-| `claimed_by_user_id`        | text, null                        | Clerk user id — future claim flow, nullable in v1              |
 | `created_at` / `updated_at` | timestamptz, not null, defaultNow |                                                                |
 
 **UNIQUE(platform, handle)** — upserts key on this natural key (never on the uuid pk, or `onConflictDoNothing` will never trigger).
@@ -69,7 +68,8 @@ Index **(post_id, captured_at desc)** — window-baseline and latest lookups. Ro
 
 - All date math in UTC (`toISOString`, `setUTCHours`); board day boundary = 00:00:00 UTC.
 - Procedures returning "no data" return `null`, never `{}` or `[]`.
-- Public DTOs are built from explicit allow-lists of columns (e.g., never leak `submitted_by_user_id`, `claimed_by_user_id`).
+- Public DTOs are built from explicit allow-lists of columns (e.g., never leak `submitted_by_user_id`).
+- No dead columns: the account-claim flow (`claimed_by_user_id`) was deliberately CUT from v1 — re-add the column WITH the feature. Do not add speculative columns.
 - Counts from platforms are `bigint` end-to-end — X view counts overflow int4.
 
 ## Files to Create/Modify

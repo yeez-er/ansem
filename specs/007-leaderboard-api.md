@@ -47,9 +47,9 @@ Each procedure result is cached 60s (per input key) via Next.js `'use cache'` / 
 ## Acceptance Criteria
 
 - [ ] Seeded integration test: creator with 2 approved posts + snapshots ranks by the spec-computed score (hand-derived expected value, not observed output)
-- [ ] Daily board counts ONLY within-window deltas: a post with 1M views all captured before today (UTC) contributes 0 today
+- [ ] Daily board counts ONLY within-window deltas: a post with 1M views all captured before today (UTC) contributes 0 today; a post with a baseline but zero in-window snapshots also contributes exactly 0 (no cross-window fallback)
 - [ ] Banned creator and `pending`/`rejected`/`removed` posts appear on no board (each status covered)
 - [ ] `leaderboard.creator` returns `null` for unknown uuid (assert `=== null`, not falsy) and for a banned creator
-- [ ] DTO allow-list test: serialized entry contains exactly the public keys — no `submitted_by_user_id`, no `is_banned`, no `claimed_by_user_id`
+- [ ] DTO allow-list test: serialized entry contains exactly the public keys — no `submitted_by_user_id`, no `is_banned`
 - [ ] Pagination: `limit` capped at 100 (101 → zod reject with code `BAD_REQUEST`); page 2 continues the total order without overlap (tie-break determinism from spec 006)
 - [ ] Count fields serialize as strings; a > 2^53 views value survives the client round-trip intact

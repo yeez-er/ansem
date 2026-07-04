@@ -7,3 +7,4 @@ STABILIZE_FAILURES.md
 DEPS_REPORT.md
 DEPLOY_REPORT.md
 .ralph-config
+.ralph-metrics.tsv

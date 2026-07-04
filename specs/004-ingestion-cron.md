@@ -15,7 +15,7 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
 2. **Select work**: approved posts, not `removed`, creator not banned, ordered by `latest_snapshot_at ASC NULLS FIRST`, **`.limit(REFRESH_BATCH_SIZE)`** (default 200, env-tunable). Stalest-first means every post is eventually refreshed even if a run can't cover the full set; log how many were selected vs. total due so truncation is visible, not silent.
 3. **Fetch**: group by platform → `provider.fetchMetrics(refs)` in sub-batches of ≤ 100.
 4. **Write per post** (one transaction per post, so one bad row can't poison the batch):
-   - `ok: true` → INSERT snapshot; UPDATE post `latest_* = metrics`, `latest_snapshot_at = capturedAt`; if the creator was a placeholder and `authorHandle` resolved, update creator (merge-on-conflict with existing `(platform, handle)` creator if one exists).
+   - `ok: true` → INSERT snapshot; UPDATE post `latest_* = metrics`, `latest_snapshot_at = capturedAt`; if the creator is a placeholder (`handle` starts with `placeholder:`) and `authorHandle` resolved, merge deterministically IN THE SAME TRANSACTION: if a creator with `(platform, authorHandle)` already exists, re-point this post's `creator_id` to it and delete the placeholder if it has no remaining posts; otherwise rename the placeholder to the real handle (respecting the UNIQUE constraint — on conflict, the re-point branch applies).
    - `NOT_FOUND` → set post `status = 'removed'` (keep snapshots — history stays on the board's past windows).
    - `RATE_LIMITED` / `PROVIDER_ERROR` → leave post untouched (stalest-first re-queues it next run); increment a per-run error counter.
 5. **Respond** `{ selected, refreshed, removed, errors, durationMs }` — also `console.info` one structured summary line for Vercel logs.
@@ -34,7 +34,7 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
 | `src/server/ingestion/refresh-metrics.ts`   | CREATE — pure-ish orchestration extracted from the route for unit tests |
 | `src/server/ingestion/select-due-posts.ts`  | CREATE — the bounded query                                              |
 | `vercel.json`                               | CREATE/MODIFY — cron entry                                              |
-| `.env.example`                              | MODIFY — `CRON_SECRET`, `REFRESH_BATCH_SIZE`                            |
+| `.env.example` + `src/env.ts`               | MODIFY — `CRON_SECRET`, `REFRESH_BATCH_SIZE`, `MAX_PROVIDER_CALLS_PER_RUN` |
 
 ## Acceptance Criteria
 

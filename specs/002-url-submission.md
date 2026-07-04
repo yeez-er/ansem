@@ -6,7 +6,7 @@ Signed-in creators submit links to their $ANSEM posts (X, TikTok, Instagram). Th
 
 ## Context
 
-- Depends on: spec 001 (schema). Consumed by: spec 004 (ingestion refreshes submitted posts), spec 008 (submit page UI), spec 009 (moderation queue).
+- Depends on: spec 001 (schema) AND spec 009 **Part A** (Clerk core + `protectedProcedure` — must be built first). Consumed by: spec 004 (ingestion refreshes submitted posts), spec 008 (submit page UI), spec 009 Part B (moderation queue).
 - Submission requires a Clerk session (spam control). The submitting user does NOT have to be the post author in v1 — fans can submit a creator's post; credit goes to the post's author account.
 
 ## URL Parsing (pure function — no I/O)
@@ -28,11 +28,11 @@ Signed-in creators submit links to their $ANSEM posts (X, TikTok, Instagram). Th
 - Flow:
   1. `parsePostUrl` → `null` ⇒ `TRPCError { code: 'BAD_REQUEST', message: 'UNSUPPORTED_URL' }`
   2. Rate limit: max 20 submissions per user per rolling 24h (count in DB; enforced server-side)
-  3. Upsert creator by `(platform, handle)` when handle is known; else create placeholder creator resolved at first metric fetch
+  3. Upsert creator by `(platform, handle)` when handle is known; else create a placeholder creator with the deterministic synthetic handle `placeholder:<platformPostId>` (satisfies NOT NULL + UNIQUE since `platformPostId` is unique per platform; `display_name: null`). Ingestion resolves and merges it (spec 004)
   4. Insert post with `status: 'pending'`, `source: 'submission'` — on `(platform, platform_post_id)` conflict, return the existing post with `alreadyTracked: true` instead of erroring
   5. Return `{ postId, status, alreadyTracked }`
 - Banned creator (`is_banned`) ⇒ `TRPCError { code: 'FORBIDDEN', message: 'CREATOR_BANNED' }`
-- If `AUTO_APPROVE_SUBMISSIONS=true` (env, default false), insert with `status: 'approved'`.
+- If `AUTO_APPROVE_SUBMISSIONS=true` (env, default false), insert with `status: 'approved'`. The flag is documented in `.env.example` and validated as optional boolean in `src/env.ts` (spec 000) — add both in this spec's tasks.
 
 Upsert + insert run in ONE transaction (concurrent duplicate submissions must not create two creators or crash — the UNIQUE gates + `onConflict` handle the race).
 

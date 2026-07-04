@@ -56,7 +56,7 @@ run_claude() {
     claude -p \
         --dangerously-skip-permissions \
         --output-format=stream-json \
-        --model opus \
+        --model "${RALPH_MODEL:-claude-fable-5}" \
         --verbose 2>&1 | tee -a "$SESSION_LOG"
 }
 
@@ -75,7 +75,7 @@ run_claude_interactive() {
     echo "  Grant Accessibility + Screen Recording if prompted."
     echo "═══════════════════════════════════════════════════"
     echo ""
-    claude --model opus "$(cat "$prompt_file")"
+    claude --model "${RALPH_MODEL:-claude-fable-5}" "$(cat "$prompt_file")"
 }
 
 invoke_prompt() {

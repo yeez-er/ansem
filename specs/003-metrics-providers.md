@@ -47,12 +47,12 @@ export interface MetricsProvider {
 
 - `fetchMetrics` takes a batch (bounded by caller, spec 004) and NEVER throws — every upstream failure maps to a typed `MetricsResult` error. All HTTP calls wrapped in try-catch with a timeout (10s default).
 - `NOT_FOUND` means the post is gone at source → caller marks post `removed`.
-- A provider registry `getProvider(platform)` selects the implementation from env config; missing config for a platform returns the mock in dev and throws a typed startup error in production (fail fast, not per-request).
+- A provider registry `getProvider(platform)` selects the implementation from env config; missing config for a platform returns the mock in dev. In production, an unconfigured platform returns `null` from the registry — ingestion (spec 004) skips that platform's posts (they keep `latest_snapshot_at: null` and render as "pending" per spec 008) and logs ONE structured startup-style warning per run. Never a hard crash, never mock data in production.
 
 ## Implementations (v1)
 
 1. **`MockMetricsProvider`** (all platforms) — deterministic pseudo-random growth seeded by `platformPostId` (same post → same curve), so dev/e2e leaderboards are stable across runs. Always available; selected when `METRICS_PROVIDER=mock` or env keys are absent in dev.
-2. **`ThirdPartyMetricsProvider`** (tiktok, instagram, optionally x) — adapter over the chosen data API. One file; blocked on the OPEN DECISION. Resolves `vm.tiktok.com` short links (spec 002 `needsResolution`) to canonical video ids on first fetch.
+2. **`SocialDataProvider`** (x — refresh path) — adapter over SocialData.tools bulk tweets-by-ids (`views_count` + engagement, $0.20/1k, see `notes/api-research.md`). **`ApifyProvider`** (tiktok, instagram) — adapter over Apify actors `clockworks/tiktok-scraper` (batch `postURLs`) and `apify/instagram-post-scraper`. DECIDED 2026-07-05 (Yasser approved the recommended vendors). Each adapter is one thin file behind the same interface. The Apify adapter resolves `vm.tiktok.com` short links (spec 002 `needsResolution`) to canonical video ids on first fetch. Adapters are built and tested against recorded fixtures in v1; live keys are set at deploy time.
 3. **`XApiMetricsProvider`** (x) — official X API v2 `GET /2/tweets` batch lookup (up to 100 ids/call) reading `public_metrics` (`impression_count`, `like_count`, `reply_count`, `retweet_count + quote_count` as shares). Enabled only when `X_BEARER_TOKEN` is set. Honors 429s by returning `RATE_LIMITED` with `retryable: true`.
 
 ## Env & Config
@@ -61,7 +61,8 @@ export interface MetricsProvider {
 | -------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `METRICS_PROVIDER`                           | `mock` \| `thirdparty` (per-platform override vars allowed: `METRICS_PROVIDER_X`, etc.) |
 | `X_BEARER_TOKEN`                             | official X API (optional)                                                               |
-| `THIRDPARTY_API_KEY` / `THIRDPARTY_BASE_URL` | data provider credentials (name will change with the decision)                          |
+| `SOCIALDATA_API_KEY`                         | SocialData.tools (X refresh)                                                            |
+| `APIFY_TOKEN`                                | Apify actors (TikTok + Instagram)                                                       |
 
 Document all of these in `ralph/AGENTS.md` External Services table with dev fallbacks.
 
@@ -72,7 +73,8 @@ Document all of these in `ralph/AGENTS.md` External Services table with dev fall
 | `src/server/metrics/provider.ts`            | CREATE — types + registry                                     |
 | `src/server/metrics/mock-provider.ts`       | CREATE                                                        |
 | `src/server/metrics/x-api-provider.ts`      | CREATE (feature-flagged)                                      |
-| `src/server/metrics/thirdparty-provider.ts` | CREATE (adapter skeleton + mock-backed until provider chosen) |
+| `src/server/metrics/socialdata-provider.ts` | CREATE — X refresh via SocialData.tools                       |
+| `src/server/metrics/apify-provider.ts`      | CREATE — TikTok + Instagram via Apify actors                  |
 | `.env.example`                              | MODIFY — add vars above                                       |
 
 ## Acceptance Criteria
