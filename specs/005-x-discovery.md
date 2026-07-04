@@ -7,7 +7,9 @@ Automatically discover new X posts about $ANSEM via the official X API recent se
 ## Context
 
 - Depends on: specs 001, 003 (shares the X client/auth). Optional at runtime: the whole feature is OFF unless `X_BEARER_TOKEN` and `X_DISCOVERY_ENABLED=true` are set — the product must work fully on submissions alone.
-- ⚠️ OPEN DECISION (owner: Yasser): X API tier. Basic (~$200/mo) gives 7-day recent search with a monthly post-read cap — the query budget below assumes Basic. Cashtag operator availability on Basic must be verified during implementation; the query falls back to keyword terms if `$ANSEM` cashtag search is tier-locked.
+- **X pricing reality (verified 2026-07-05, see `notes/api-research.md`)**: new developer accounts are pay-per-use — post read $0.005 ($5/1k), deduplicated per UTC day, recent search (7-day) available to all developers, **configurable spend cap set in the X console (set it before enabling this feature)**. There is no tier to choose; the budget knobs are the spend cap + the page budget below.
+- Search results include `public_metrics` (with `impression_count`) inline, so discovery doubles as the discovered posts' first metric snapshot — no extra read cost. Ongoing refresh of X posts should NOT use official lookups by default ($5/1k); spec 003's provider decision covers refresh economics.
+- ⚠️ Cashtag operator `$ANSEM` historically errored on lower tiers; current docs show no restriction on PPU but it is UNVERIFIED — the first implementation task must smoke-test it and fall back to the quoted-keyword query if rejected.
 - TikTok/Instagram have NO equivalent discovery path (official keyword search is unavailable to commercial apps) — do not add placeholder discovery code for them.
 
 ## Route: `POST /api/cron/discover-x`

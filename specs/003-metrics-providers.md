@@ -7,8 +7,9 @@ A pluggable provider layer that, given a tracked post, returns its current publi
 ## Context
 
 - Depends on: spec 001. Consumed by: spec 004 (cron calls providers), spec 005 (X discovery shares the X client).
-- **Platform reality**: TikTok and Instagram official APIs only expose view counts for the authenticated account's own media, so public-post metrics come from a third-party data provider. X metrics can come from the official API (paid) or the same third-party route.
-- ⚠️ OPEN DECISION (owner: Yasser): which third-party provider (Apify / EnsembleData / ScrapeCreators class) and X API tier. The interface below is provider-agnostic so this decision only touches one adapter file. Until decided, only `MockMetricsProvider` runs in dev/test.
+- **Platform reality** (verified 2026-07-05, details + sources in `notes/api-research.md`): TikTok and Instagram official APIs only expose view counts for the authenticated account's own media (TikTok Display API) or for professional accounts via IG Business Discovery — so public-post metrics by URL come from a third-party data provider. X official API returns `impression_count` for anyone's posts but at $5/1k reads (PPU); SocialData.tools returns the same for $0.20/1k.
+- ⚠️ OPEN DECISION (owner: Yasser): third-party scrapers sit **outside platform ToS** — accepted-risk call. Researched shortlist: X → SocialData.tools ($0.20/1k, bulk by-ids, views included); TikTok → Apify `clockworks/tiktok-scraper` ($1.70/1k, URL batch); IG → Apify `instagram-post-scraper` ($1.00/1k); single-vendor alternative → ScrapeCreators (all three, ~$1–1.9/1k, no bulk). Envelope ~$100–600/mo at 1–5k posts polled 1–4×/day. The interface below is provider-agnostic so the decision touches one adapter file. Until decided, only `MockMetricsProvider` runs in dev/test.
+- **Compliant upgrade paths (post-v1, keep the interface ready)**: TikTok creator OAuth → Display API returns official view counts for the entrant's own videos (natural contest-entry requirement); IG Business Discovery → Reels `view_count` by *username* for professional accounts (needs Meta App Review + business verification — weeks of lead time, start early if chosen).
 
 ## Interface
 

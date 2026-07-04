@@ -15,6 +15,7 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 - **Tone**: confident, meme-literate, zero corporate. Header brand: **"$ANSEM · THE BLACK BULL"** with a bull glyph 🐂; tagline "Post. Farm views. Climb."
 - **Platform badges**: X = white glyph, TikTok = cyan/pink glyph, Instagram = purple/pink gradient glyph — shown on every post row and creator card.
 - Numbers abbreviate (`1.2M`, `48.3K`) with full value in a tooltip/`title`. Ranks 1–3 get gold/silver/bronze medal treatment; rank 1 row gets the gradient border.
+- **Footer**: official links (blackbullsol.com, @blackbullsol on X) + the canonical Solana mint `9cRCn9rGT8V2imeM2BaKs13yhMEais3ruM3rPvTGpump` with a copy button and the caption "the only real one" — copycat mints are rampant (see `notes/api-research.md`). Mint lives in ONE constant (`src/lib/token.ts`), never inline.
 
 ## Pages (App Router)
 
