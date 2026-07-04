@@ -7,7 +7,7 @@ The relational backbone for a cross-platform creator leaderboard: creators, thei
 ## Context
 
 - Greenfield. Stack: Next.js (App Router) + tRPC + Drizzle ORM + Neon Postgres.
-- Design principle: **snapshots are the source of truth**; leaderboards are derived views. Weekly boards rank *metric deltas within the window*, so we must retain history, not just latest values.
+- Design principle: **snapshots are the source of truth**; leaderboards are derived views. Daily boards rank *metric deltas within the window*, so we must retain history, not just latest values.
 - Every constraint here must exist in BOTH the Drizzle schema AND a generated SQL migration (ORM metadata without a migration is documentation, not enforcement).
 
 ## Schema
@@ -63,11 +63,11 @@ The relational backbone for a cross-platform creator leaderboard: creators, thei
 | `views` / `likes` / `comments` / `shares` | bigint, not null, default 0 | |
 | `captured_at` | timestamptz, not null, defaultNow | |
 
-Index **(post_id, captured_at desc)** — window-baseline and latest lookups. Rows are never updated or deleted (except via post cascade). Weekly scores are computed as `latest − baseline`, never by summing rows, so a duplicate snapshot cannot double-count.
+Index **(post_id, captured_at desc)** — window-baseline and latest lookups. Rows are never updated or deleted (except via post cascade). Windowed (daily) scores are computed as `latest − baseline`, never by summing rows, so a duplicate snapshot cannot double-count.
 
 ## Conventions (apply to all specs)
 
-- All date math in UTC (`toISOString`, `setUTCHours`); week boundary = Monday 00:00:00 UTC.
+- All date math in UTC (`toISOString`, `setUTCHours`); board day boundary = 00:00:00 UTC.
 - Procedures returning "no data" return `null`, never `{}` or `[]`.
 - Public DTOs are built from explicit allow-lists of columns (e.g., never leak `submitted_by_user_id`, `claimed_by_user_id`).
 - Counts from platforms are `bigint` end-to-end — X view counts overflow int4.

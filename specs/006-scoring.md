@@ -29,11 +29,11 @@ Default weights (exported constant `DEFAULT_WEIGHTS`, single source of truth):
 ## API (all in `src/lib/scoring.ts`)
 
 - `computeScore(m: MetricTotals, w = DEFAULT_WEIGHTS): bigint` — bigint math throughout; never floats.
-- `weekWindow(now: Date): { start: Date; end: Date }` — Monday 00:00:00.000 UTC to next Monday (exclusive). UTC functions ONLY (`getUTCDay`, `setUTCHours`) — a Sunday-23:59 UTC post and a Monday-00:00 UTC post land in different weeks regardless of server timezone.
-- `windowDelta(baseline: MetricTotals | null, latest: MetricTotals): MetricTotals` — per-metric `max(0n, latest − baseline)`; `null` baseline (post born mid-week) ⇒ baseline is all-zeros; a platform metric that DECREASED (likes removed, recount) clamps to 0, never negative.
+- `dayWindow(now: Date): { start: Date; end: Date }` — 00:00:00.000 UTC to next midnight (exclusive). UTC functions ONLY (`setUTCHours`) — a 23:59:59 UTC snapshot and a 00:00:00 UTC snapshot land in different days regardless of server timezone. Keep the helper shape generic enough that a weekly/campaign window can be added later without touching consumers.
+- `windowDelta(baseline: MetricTotals | null, latest: MetricTotals): MetricTotals` — per-metric `max(0n, latest − baseline)`; `null` baseline (post first tracked mid-window) ⇒ baseline is all-zeros; a platform metric that DECREASED (likes removed, recount) clamps to 0, never negative.
 - `rankEntries(entries: ScoredEntry[]): RankedEntry[]` — sort by score desc; tie-break by views desc, then earliest `postedAt` (first mover wins), then id (total order — stable pagination). Assigns dense ranks (1,2,2,4 → no: standard competition ranking 1,2,2,4).
 
-Weekly leaderboard semantics (implemented by spec 007's queries, defined here): a post's weekly contribution = `computeScore(windowDelta(baseline, latest))` where `baseline` = newest snapshot strictly BEFORE window start, `latest` = newest snapshot within the window. Posts `removed` mid-week keep their last in-window snapshot. All-time = `computeScore(latest_*)` denormalized columns. A creator's board entry = sum over their approved posts.
+Daily leaderboard semantics (implemented by spec 007's queries, defined here): a post's daily contribution = `computeScore(windowDelta(baseline, latest))` where `baseline` = newest snapshot strictly BEFORE window start (00:00 UTC today), `latest` = newest snapshot within the window. Posts `removed` mid-day keep their last in-window snapshot. All-time = `computeScore(latest_*)` denormalized columns. A creator's board entry = sum over their approved posts. (With a 30-min refresh cadence, a baseline snapshot from the prior day exists for any post tracked more than a day — new posts fall back to the `null`-baseline rule.)
 
 ## Files to Create/Modify
 
@@ -46,7 +46,7 @@ Weekly leaderboard semantics (implemented by spec 007's queries, defined here): 
 
 - [ ] `computeScore` verified against hand-computed spec values (e.g., `{views: 1000n, likes: 10n, comments: 2n, shares: 1n}` → `1000 + 300 + 120 + 90 = 1510n`) — assert the spec number, not the function's own output
 - [ ] `computeScore` on all-zero metrics → `0n`; on view counts > `Number.MAX_SAFE_INTEGER` → exact bigint result
-- [ ] `weekWindow` fake-timer tests: Monday 00:00:00 UTC belongs to the week it starts; Sunday 23:59:59.999 UTC belongs to the prior week; a DST-transition date in a non-UTC zone changes nothing (pin the clock; zero ambient `Date.now()`)
+- [ ] `dayWindow` fake-timer tests: 00:00:00.000 UTC belongs to the day it starts; 23:59:59.999 UTC belongs to that same day (next ms rolls over); a DST-transition date in a non-UTC zone changes nothing (pin the clock; zero ambient `Date.now()`)
 - [ ] `windowDelta` clamps decreased metrics to 0 and treats `null` baseline as zeros
 - [ ] `rankEntries` implements standard competition ranking (1,2,2,4) and the full tie-break chain; property test: output order is a total order (no ambiguity for stable pagination)
 - [ ] Zero divisions anywhere (source verification: module contains no `/` operator on metric values)

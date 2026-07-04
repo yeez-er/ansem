@@ -21,13 +21,13 @@ The public face: a dark, degen-energy leaderboard site where anyone can see who'
 
 ### `/` — the board
 - Header: brand, nav (`Leaderboard`, `Submit`, Clerk sign-in button)
-- Controls row: period toggle (**This Week** default / **All Time**) + platform filter tabs (All / X / TikTok / Instagram). Both are URL state (`?period=weekly&platform=all`) — shareable, back-button-safe.
+- Controls row: period toggle (**Today** default / **All Time**) + platform filter tabs (All / X / TikTok / Instagram). Both are URL state (`?period=daily&platform=all`) — shareable, back-button-safe. Small caption under the toggle: "resets 00:00 UTC" with a live countdown.
 - Board table: rank, creator (avatar, handle, platform badge), score, views, likes, comments, shares, posts count. Row click → creator page. "Load more" pagination via `nextCursor`.
 - Right rail (desktop) / below (mobile): **Recent posts** ticker from `leaderboard.recentPosts` — thumbnail-less cards: platform badge, handle, truncated caption, view count, links out to the post (`target=_blank rel=noopener`).
 - **Empty state**: bull glyph + "No posts on the board yet. Be the first — submit your post." + CTA to `/submit`. **Error state**: friendly retry card, never a raw error string.
 
 ### `/creator/[id]`
-- Creator header (avatar, handle, platform badge, link to profile at source), stat tiles (all-time score, weekly score, total views, posts), posts table (each row links out to the source post). Unknown/banned id → `notFound()` → styled 404.
+- Creator header (avatar, handle, platform badge, link to profile at source), stat tiles (all-time score, today's score, total views, posts), posts table (each row links out to the source post). Unknown/banned id → `notFound()` → styled 404.
 
 ### `/submit`
 - Signed-out: Clerk sign-in gate with copy "Sign in to submit posts."

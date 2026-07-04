@@ -16,7 +16,7 @@ Scheduled refresh of every approved post's metrics: call the provider layer in b
 3. **Fetch**: group by platform → `provider.fetchMetrics(refs)` in sub-batches of ≤ 100.
 4. **Write per post** (one transaction per post, so one bad row can't poison the batch):
    - `ok: true` → INSERT snapshot; UPDATE post `latest_* = metrics`, `latest_snapshot_at = capturedAt`; if the creator was a placeholder and `authorHandle` resolved, update creator (merge-on-conflict with existing `(platform, handle)` creator if one exists).
-   - `NOT_FOUND` → set post `status = 'removed'` (keep snapshots — history stays on the board's past weeks).
+   - `NOT_FOUND` → set post `status = 'removed'` (keep snapshots — history stays on the board's past windows).
    - `RATE_LIMITED` / `PROVIDER_ERROR` → leave post untouched (stalest-first re-queues it next run); increment a per-run error counter.
 5. **Respond** `{ selected, refreshed, removed, errors, durationMs }` — also `console.info` one structured summary line for Vercel logs.
 
