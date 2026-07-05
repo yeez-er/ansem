@@ -16,6 +16,7 @@
     "db:seed": "tsx src/server/db/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.5.12",
     "@tanstack/react-query": "^5.101.2",
     "@trpc/client": "^11.18.0",
     "@trpc/react-query": "^11.18.0",

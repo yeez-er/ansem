@@ -87,6 +87,7 @@
 - **Files to create**: `src/middleware.ts` (or `proxy.ts` per Next version — verify live Clerk docs), sign-in/sign-up routes, `<ClerkProvider>` in layout.
 - **Files to modify**: `src/server/api/trpc.ts` (context + `protectedProcedure`), `src/env.ts`, `.env.example`.
 - **Notes**: Clerk SDK v7 / Core 3: `auth()` and `clerkClient()` are async, `clerkMiddleware()` (not `authMiddleware()`), `<ClerkProvider>` inside `<body>` with cache components — re-verify against live docs. `adminProcedure` is Part B (Task 26), NOT here.
+- **Progress (2026-07-05, scoped iteration 1 of 2)**: Core landed — session-derived `{ userId, isAdmin }` context + `protectedProcedure` (UNAUTHORIZED, fails closed; Clerk failure degrades to signed-out), route gate for `/submit` + `/admin/**` in `src/proxy.ts` (Next 16 renamed the middleware convention to proxy — `middleware.ts` is deprecated), `<ClerkProvider>` inside `<body>`, parse-valid placeholder keys in `.env.example`. Remaining before checking the box: sign-in/sign-up catch-all routes (+ `NEXT_PUBLIC_CLERK_SIGN_IN_URL`/`SIGN_UP_URL` env keys) and the e2e sign-in gate via Clerk testing tokens.
 
 ---
 
@@ -579,7 +580,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 
 - [x] Task 1: Next.js scaffold + toolchain
 - [x] Task 2: tRPC + Drizzle + env validation
-- [ ] Task 3: Drizzle schema + migration
+- [x] Task 3: Drizzle schema + migration
 - [ ] Task 4: Clerk core (009A)
 - [ ] Task 5: parsePostUrl parser
 - [ ] Task 6: submissions.submit
