@@ -1,3 +1,4 @@
+import { submissionsRouter } from "./routers/submissions";
 import { createTRPCRouter, publicProcedure } from "./trpc";
 
 export const appRouter = createTRPCRouter({
@@ -7,6 +8,7 @@ export const appRouter = createTRPCRouter({
       time: new Date().toISOString(),
     })),
   }),
+  submissions: submissionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

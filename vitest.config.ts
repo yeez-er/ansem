@@ -11,5 +11,8 @@ export default defineConfig({
     // (jsdom added when the first component test lands)
     environment: "node",
     include: ["src/**/*.test.{ts,tsx}"],
+    // DB integration suites share one TEST_DATABASE_URL and drop/truncate it;
+    // parallel test files would race each other on that database.
+    fileParallelism: false,
   },
 });

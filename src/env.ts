@@ -8,6 +8,14 @@ const optionalString = z.preprocess(
   z.string().optional(),
 );
 
+// Optional feature flags must be exactly "true"/"false" — a typo like "yes"
+// fails the boot-time parse instead of silently meaning false.
+const optionalBooleanString = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim() === "" ? undefined : value,
+  z.enum(["true", "false"]).optional(),
+);
+
 const serverEnvSchema = z.object({
   DATABASE_URL: z
     .string()
@@ -24,6 +32,7 @@ const serverEnvSchema = z.object({
   SOCIALDATA_API_KEY: optionalString,
   APIFY_TOKEN: optionalString,
   ADMIN_USER_IDS: optionalString,
+  AUTO_APPROVE_SUBMISSIONS: optionalBooleanString,
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

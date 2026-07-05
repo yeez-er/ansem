@@ -4,38 +4,17 @@
 // cascade behavior — this suite drops and recreates the target database's
 // schema on every run, so TEST_DATABASE_URL must point at a DEDICATED test DB.
 import { eq, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { creators, metricSnapshots, posts } from "@/server/db/schema";
+import {
+  connectTestDb,
+  migrateFresh,
+  pgError,
+  truncateAll,
+} from "@/tests/helpers/test-db";
 
-try {
-  process.loadEnvFile(".env.local"); // local dev; CI injects env directly
-} catch {
-  // .env.local absent — env must already be in the process
-}
-
-const url = process.env.TEST_DATABASE_URL;
-if (!url) {
-  throw new Error(
-    "TEST_DATABASE_URL is required for schema runtime tests — point it at a DEDICATED test database (it gets wiped), never at the dev DB.",
-  );
-}
-if (process.env.DATABASE_URL && url === process.env.DATABASE_URL) {
-  throw new Error(
-    "TEST_DATABASE_URL must differ from DATABASE_URL — these tests wipe the target database.",
-  );
-}
-
-const pool = new Pool({ connectionString: url });
-const db = drizzle({ client: pool });
-
-// drizzle wraps driver errors (DrizzleQueryError); the pg DatabaseError with
-// `code`/`constraint` rides on `.cause`.
-function pgError(err: unknown): unknown {
-  return err instanceof Error && err.cause !== undefined ? err.cause : err;
-}
+const testDb = connectTestDb();
+const { db } = testDb;
 
 async function insertCreator(
   overrides: Partial<typeof creators.$inferInsert> = {},
@@ -73,22 +52,15 @@ async function insertPost(
 }
 
 beforeAll(async () => {
-  // Fresh database: drop the app schema AND drizzle's migration bookkeeping
-  // so `migrate` provably applies the full migration from zero.
-  await pool.query('drop schema if exists "public" cascade');
-  await pool.query('drop schema if exists "drizzle" cascade');
-  await pool.query('create schema "public"');
-  await migrate(db, { migrationsFolder: "drizzle" });
+  await migrateFresh(testDb);
 });
 
 afterAll(async () => {
-  await pool.end();
+  await testDb.pool.end();
 });
 
 beforeEach(async () => {
-  await db.execute(
-    sql`truncate table "creators", "posts", "metric_snapshots" cascade`,
-  );
+  await truncateAll(db);
 });
 
 describe("migration applies cleanly to a fresh database", () => {

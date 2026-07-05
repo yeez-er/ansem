@@ -49,6 +49,20 @@ describe("parseServerEnv", () => {
     expect(env.CRON_SECRET).toBe("s3cret");
   });
 
+  it("AUTO_APPROVE_SUBMISSIONS accepts only true/false (blank normalizes to undefined)", () => {
+    expect(
+      parseServerEnv({ ...VALID, AUTO_APPROVE_SUBMISSIONS: "true" })
+        .AUTO_APPROVE_SUBMISSIONS,
+    ).toBe("true");
+    expect(
+      parseServerEnv({ ...VALID, AUTO_APPROVE_SUBMISSIONS: "" })
+        .AUTO_APPROVE_SUBMISSIONS,
+    ).toBeUndefined();
+    expect(() =>
+      parseServerEnv({ ...VALID, AUTO_APPROVE_SUBMISSIONS: "yes" }),
+    ).toThrowError(/AUTO_APPROVE_SUBMISSIONS/);
+  });
+
   it("strips unknown keys (allow-list output, process.env never leaks through)", () => {
     const env = parseServerEnv({ ...VALID, PATH: "/usr/bin", HOME: "/root" });
     expect(env).not.toHaveProperty("PATH");
