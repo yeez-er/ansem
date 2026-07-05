@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/refresh-metrics",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/discover-x",
+      "schedule": "0 * * * *"
     }
   ]
 }
