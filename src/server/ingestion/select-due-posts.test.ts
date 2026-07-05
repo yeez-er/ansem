@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { creators, posts } from "@/server/db/schema";
+import { makeSeeders } from "@/tests/helpers/seed";
 import {
   connectTestDb,
   migrateFresh,
@@ -26,49 +26,9 @@ const T1_STALEST = new Date("2026-07-01T00:00:00Z");
 const T2_MIDDLE = new Date("2026-07-02T00:00:00Z");
 const T3_FRESHEST = new Date("2026-07-03T00:00:00Z");
 
-// Suite-local seeding (2nd seeding helper after submit.test.ts — extract to a
-// shared test helper on the 3rd occurrence, per the metricsOf precedent).
-let seq = 0;
-
-async function seedCreator(
-  overrides: Partial<typeof creators.$inferInsert> = {},
-) {
-  seq += 1;
-  const handle = `creator${seq}`;
-  const [row] = await db
-    .insert(creators)
-    .values({
-      platform: "x",
-      handle,
-      profileUrl: `https://x.com/${handle}`,
-      ...overrides,
-    })
-    .returning();
-  if (!row) throw new Error("creator seed returned no row");
-  return row;
-}
-
-async function seedPost(
-  creatorId: string,
-  overrides: Partial<typeof posts.$inferInsert> = {},
-) {
-  seq += 1;
-  const platformPostId = `18999${String(seq).padStart(14, "0")}`;
-  const [row] = await db
-    .insert(posts)
-    .values({
-      creatorId,
-      platform: "x",
-      platformPostId,
-      url: `https://x.com/creator/status/${platformPostId}`,
-      status: "approved",
-      source: "submission",
-      ...overrides,
-    })
-    .returning();
-  if (!row) throw new Error("post seed returned no row");
-  return row;
-}
+// Shared seeding helper — extracted to src/tests/helpers/seed.ts on the 3rd
+// occurrence (submit, select-due-posts, refresh-metrics), as scheduled.
+const { seedCreator, seedPost } = makeSeeders(db);
 
 beforeAll(async () => {
   await migrateFresh(testDb);

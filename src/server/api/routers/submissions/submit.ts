@@ -4,7 +4,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, count, eq, gte } from "drizzle-orm";
 import { z } from "zod";
-import { type ParsedPost, type Platform, parsePostUrl } from "@/lib/post-url";
+import { type ParsedPost, parsePostUrl, profileUrlFor } from "@/lib/post-url";
 import { protectedProcedure, type TRPCContext } from "@/server/api/trpc";
 import { creators, posts, resolutionAttempts } from "@/server/db/schema";
 
@@ -45,17 +45,6 @@ async function quotaUsed(
       ),
   ]);
   return (insertedPosts[0]?.n ?? 0) + (attempts[0]?.n ?? 0);
-}
-
-function profileUrlFor(platform: Platform, handle: string): string {
-  switch (platform) {
-    case "x":
-      return `https://x.com/${handle}`;
-    case "tiktok":
-      return `https://www.tiktok.com/@${handle}`;
-    case "instagram":
-      return `https://www.instagram.com/${handle}/`;
-  }
 }
 
 // Follows a vm.tiktok.com short link exactly ONE hop server-side and re-parses

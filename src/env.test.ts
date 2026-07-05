@@ -110,6 +110,26 @@ describe("parseServerEnv", () => {
     }
   });
 
+  it("MAX_PROVIDER_CALLS_PER_RUN parses to a positive integer (blank normalizes to undefined)", () => {
+    expect(
+      parseServerEnv({ ...VALID, MAX_PROVIDER_CALLS_PER_RUN: "5" })
+        .MAX_PROVIDER_CALLS_PER_RUN,
+    ).toBe(5);
+    expect(
+      parseServerEnv({ ...VALID, MAX_PROVIDER_CALLS_PER_RUN: "" })
+        .MAX_PROVIDER_CALLS_PER_RUN,
+    ).toBeUndefined();
+    expect(parseServerEnv(VALID).MAX_PROVIDER_CALLS_PER_RUN).toBeUndefined();
+  });
+
+  it("MAX_PROVIDER_CALLS_PER_RUN rejects junk, zero, negatives, and fractions at boot", () => {
+    for (const bad of ["abc", "0", "-5", "2.5"]) {
+      expect(() =>
+        parseServerEnv({ ...VALID, MAX_PROVIDER_CALLS_PER_RUN: bad }),
+      ).toThrowError(/MAX_PROVIDER_CALLS_PER_RUN/);
+    }
+  });
+
   it("strips unknown keys (allow-list output, process.env never leaks through)", () => {
     const env = parseServerEnv({ ...VALID, PATH: "/usr/bin", HOME: "/root" });
     expect(env).not.toHaveProperty("PATH");

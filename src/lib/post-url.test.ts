@@ -2,7 +2,7 @@
 // exact ParsedPost shapes per the spec's canonical-URL table. `toEqual` on the
 // full object rejects extra keys, so shape drift fails loudly.
 import { describe, expect, it } from "vitest";
-import { type ParsedPost, parsePostUrl } from "./post-url";
+import { type ParsedPost, parsePostUrl, profileUrlFor } from "./post-url";
 
 describe("parsePostUrl — valid URLs (canonical rebuild per spec table)", () => {
   const cases: Array<{ name: string; input: string; expected: ParsedPost }> = [
@@ -198,5 +198,23 @@ describe("parsePostUrl — garbage returns null (never throws, never {})", () =>
     }).not.toThrow();
     // exactly null — `{}` would pass a falsy-flavored check and is banned
     expect(result).toBeNull();
+  });
+});
+
+describe("profileUrlFor — canonical profile URL per platform", () => {
+  // Shared by submission's creator upsert and ingestion's placeholder rename
+  // (spec 004): a resolved creator must never keep its stand-in post URL.
+  it.each([
+    { platform: "x" as const, expected: "https://x.com/blackbull" },
+    {
+      platform: "tiktok" as const,
+      expected: "https://www.tiktok.com/@blackbull",
+    },
+    {
+      platform: "instagram" as const,
+      expected: "https://www.instagram.com/blackbull/",
+    },
+  ])("$platform → $expected", ({ platform, expected }) => {
+    expect(profileUrlFor(platform, "blackbull")).toBe(expected);
   });
 });

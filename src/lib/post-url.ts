@@ -12,6 +12,20 @@ export type ParsedPost = {
   needsResolution?: boolean;
 };
 
+// Canonical profile URL per platform — shared by submission's creator upsert
+// and ingestion's placeholder rename (spec 004): a resolved creator must never
+// keep its stand-in post-URL profile.
+export function profileUrlFor(platform: Platform, handle: string): string {
+  switch (platform) {
+    case "x":
+      return `https://x.com/${handle}`;
+    case "tiktok":
+      return `https://www.tiktok.com/@${handle}`;
+    case "instagram":
+      return `https://www.instagram.com/${handle}/`;
+  }
+}
+
 const X_HANDLE = /^[a-z0-9_]{1,15}$/;
 const TIKTOK_HANDLE = /^[a-z0-9._]{1,24}$/;
 const NUMERIC_ID = /^\d+$/;

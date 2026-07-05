@@ -52,6 +52,7 @@ const serverEnvSchema = z.object({
   SOCIALDATA_API_KEY: optionalString,
   APIFY_TOKEN: optionalString,
   REFRESH_BATCH_SIZE: optionalPositiveInt,
+  MAX_PROVIDER_CALLS_PER_RUN: optionalPositiveInt,
   ADMIN_USER_IDS: optionalString,
   AUTO_APPROVE_SUBMISSIONS: optionalBooleanString,
 });
