@@ -470,9 +470,18 @@ while true; do
 
     if [ $CLAUDE_EXIT -ne 0 ]; then
         log "claude -p exited with code $CLAUDE_EXIT"
+        CONSECUTIVE_CLI_FAILS=$((${CONSECUTIVE_CLI_FAILS:-0} + 1))
         end_iteration "INCOMPLETE"
+        # Failure-storm guard: a dead CLI (usage window, auth, network) fails in
+        # seconds — without this, it burns every remaining iteration in a minute.
+        if [ "$CONSECUTIVE_CLI_FAILS" -ge 3 ]; then
+            log "3 consecutive claude failures — aborting session (usage limit or CLI outage; relaunch when resolved)"
+            notify "loop.sh: aborted after 3 consecutive claude -p failures in $(basename "$(pwd)")"
+            break
+        fi
         continue
     fi
+    CONSECUTIVE_CLI_FAILS=0
 
     # e2e-full: stop early once the priority queue is exhausted
     if [ "$MODE" = "e2e-full" ] && grep -q "ALL BATCHES COMPLETE" "$SESSION_LOG" 2>/dev/null; then
@@ -595,7 +604,7 @@ while true; do
 
         # Codex analyzes and writes HARDEN_SPEC.md
         CODEX_EXIT=0
-        codex exec -m gpt-5.2-codex \
+        codex exec -m "${CODEX_MODEL:-gpt-5.4}" \
             --full-auto \
             - < PROMPT_harden.md \
             2>&1 | tee -a "$SESSION_LOG" || CODEX_EXIT=$?
@@ -607,7 +616,7 @@ while true; do
 
             # Codex verifies
             VERIFY_EXIT=0
-            codex exec -m gpt-5.2-codex \
+            codex exec -m "${CODEX_MODEL:-gpt-5.4}" \
                 --full-auto \
                 - < PROMPT_harden_verify.md \
                 2>&1 | tee -a "$SESSION_LOG" || VERIFY_EXIT=$?
