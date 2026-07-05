@@ -16,6 +16,8 @@ const serverEnvSchema = z.object({
     }),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: optionalString,
   CLERK_SECRET_KEY: optionalString,
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: optionalString,
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: optionalString,
   CRON_SECRET: optionalString,
   METRICS_PROVIDER: optionalString,
   X_BEARER_TOKEN: optionalString,
