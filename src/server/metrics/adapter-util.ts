@@ -1,6 +1,34 @@
 // Shared primitives for live metrics adapters (extracted on the 2nd
 // occurrence — X API and SocialData map upstream JSON the same way).
-import type { MetricsResult } from "./provider";
+import type { MetricsResult, PostRef } from "./provider";
+
+// Chunked fetch loop shared by every live adapter (extracted on the 3rd
+// occurrence — X API, SocialData, Apify). Slices refs into provider-sized
+// batches and backstops the never-reject contract: an unexpected bug in a
+// batch degrades to typed errors for that chunk instead of rejecting the
+// whole run.
+export async function fetchMetricsInChunks(
+  refs: PostRef[],
+  chunkSize: number,
+  fetchBatch: (chunk: PostRef[]) => Promise<Map<string, MetricsResult>>,
+): Promise<Map<string, MetricsResult>> {
+  const results = new Map<string, MetricsResult>();
+  for (let i = 0; i < refs.length; i += chunkSize) {
+    const chunk = refs.slice(i, i + chunkSize);
+    let batch: Map<string, MetricsResult>;
+    try {
+      batch = await fetchBatch(chunk);
+    } catch {
+      batch = errorForAll(
+        chunk.map((ref) => ref.platformPostId),
+        "PROVIDER_ERROR",
+        false,
+      );
+    }
+    for (const [id, result] of batch) results.set(id, result);
+  }
+  return results;
+}
 
 export function errorForAll(
   ids: string[],

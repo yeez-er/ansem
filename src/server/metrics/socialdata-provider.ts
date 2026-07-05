@@ -6,6 +6,7 @@ import {
   asRecord,
   dateOrNull,
   errorForAll,
+  fetchMetricsInChunks,
   stringOrNull,
   toBigInt,
 } from "./adapter-util";
@@ -32,22 +33,9 @@ export class SocialDataProvider implements MetricsProvider {
   }
 
   async fetchMetrics(refs: PostRef[]): Promise<Map<string, MetricsResult>> {
-    const results = new Map<string, MetricsResult>();
-    for (let i = 0; i < refs.length; i += MAX_IDS_PER_CALL) {
-      const ids = refs
-        .slice(i, i + MAX_IDS_PER_CALL)
-        .map((ref) => ref.platformPostId);
-      let batch: Map<string, MetricsResult>;
-      try {
-        batch = await this.fetchBatch(ids);
-      } catch {
-        // Contract backstop: an unexpected bug degrades to typed errors for
-        // this chunk instead of rejecting the whole run.
-        batch = errorForAll(ids, "PROVIDER_ERROR", false);
-      }
-      for (const [id, result] of batch) results.set(id, result);
-    }
-    return results;
+    return fetchMetricsInChunks(refs, MAX_IDS_PER_CALL, (chunk) =>
+      this.fetchBatch(chunk.map((ref) => ref.platformPostId)),
+    );
   }
 
   private async fetchBatch(ids: string[]): Promise<Map<string, MetricsResult>> {

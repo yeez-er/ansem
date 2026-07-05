@@ -4,6 +4,7 @@
 // and the ingestion cron counts it as skipped (spec 004).
 import type { ServerEnv } from "@/env";
 import type { Platform } from "@/lib/post-url";
+import { type ApifyPlatform, ApifyProvider } from "./apify-provider";
 import { MockMetricsProvider } from "./mock-provider";
 import { SocialDataProvider } from "./socialdata-provider";
 import { XApiMetricsProvider } from "./x-api-provider";
@@ -54,8 +55,17 @@ export function resolveProviderMode(
   return env[OVERRIDE_KEY[platform]] ?? env.METRICS_PROVIDER;
 }
 
-// Live adapters register here: Apify (Task 11) fills tiktok/instagram — each
-// factory gates on its own API keys and returns null when they are absent.
+// One APIFY_TOKEN drives both Apify-backed platforms; blank keys are
+// normalized away at boot, so `APIFY_TOKEN=` can never enable an adapter.
+const apifyFactory =
+  (platform: ApifyPlatform) =>
+  (env: ServerEnv): MetricsProvider | null =>
+    env.APIFY_TOKEN
+      ? new ApifyProvider({ token: env.APIFY_TOKEN, platform })
+      : null;
+
+// Live adapters register here — each factory gates on its own API keys and
+// returns null when they are absent.
 const LIVE_PROVIDERS: Partial<
   Record<Platform, (env: ServerEnv) => MetricsProvider | null>
 > = {
@@ -71,6 +81,8 @@ const LIVE_PROVIDERS: Partial<
     }
     return null;
   },
+  tiktok: apifyFactory("tiktok"),
+  instagram: apifyFactory("instagram"),
 };
 
 export function getProvider(

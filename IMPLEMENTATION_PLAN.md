@@ -185,6 +185,7 @@
   - `APIFY_TOKEN` in env schema; every `PostRef` carries a canonical id (short links never reach providers)
 - **Test strategy**: unit tests against recorded fixtures; adversarial never-throws test.
 - **Files to create**: `src/server/metrics/apify-provider.ts`. **Modify**: `src/env.ts`, `.env.example`.
+- **Progress (2026-07-05 — DONE)**: One platform-parameterized `ApifyProvider` behind the Task 8 contract, driving both actors over `POST /v2/actors/{id}/run-sync-get-dataset-items` (endpoint + input schemas verified against live Apify docs): TikTok `clockworks~tiktok-scraper` batch `postURLs` keyed back by string item `id` (numeric ids exceed 2^53), IG `apify~instagram-post-scraper` via its `username` field (documented to accept post URLs) keyed by `shortCode` (= parser's platformPostId). Recorded fixture shapes pinned: TikTok `playCount/diggCount/commentCount/shareCount` + `authorMeta{name,nickName,avatar}` + `createTimeISO`; IG `videoViewCount/likesCount/commentsCount` + `ownerUsername/ownerFullName` + `timestamp`, no owner avatar (null). Semantic pins: IG `shares: 0n` (no public reshare count — platform-wide gap, not per-post failure); hidden likes (`likesCount: -1`) and photo posts (no `videoViewCount`) → per-post `PROVIDER_ERROR`, never fabricated counts (Task 10 semantics); absent-from-well-formed-array → `NOT_FOUND` but non-array body → `PROVIDER_ERROR` for all (shape drift can never mass-remove posts). Errors: 429→exact `RATE_LIMITED` retryable, 408 (Apify's own 300s sync ceiling)→retryable, network/5xx→retryable, 402/4xx/malformed→non-retryable, reject-proof control-tested. **Deviation**: `REQUEST_TIMEOUT_MS = 300_000` not 10s (pinned dual-layer) — a sync actor run IS a scrape job; Apify 408s at 300s, our abort only backstops hung connections. Registry: one `APIFY_TOKEN` gates both platforms (live in dev+prod when set, mock override wins in dev, blank key inert, token never enables x); 27-combo prod-never-mock sweep untouched; env keys already present since Tasks 1–2. DRY: the chunk-loop hit its 3rd occurrence as scheduled by Task 10's note → `fetchMetricsInChunks` extracted to `adapter-util.ts`, x-api + socialdata refactored onto it, both suites green unchanged. Note for Task 13: cron-route fan-out must budget for the 300s worst case per Apify chunk when sizing `MAX_PROVIDER_CALLS_PER_RUN`/route `maxDuration`.
 
 ---
 
@@ -595,7 +596,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 8: Provider interface + registry + mock
 - [x] Task 9: X API provider
 - [x] Task 10: SocialData provider
-- [ ] Task 11: Apify provider
+- [x] Task 11: Apify provider
 - [ ] Task 12: selectDuePosts query
 - [ ] Task 13: refreshMetrics orchestration
 - [ ] Task 14: refresh-metrics cron route
