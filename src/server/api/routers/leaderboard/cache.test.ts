@@ -207,6 +207,53 @@ describe("leaderboard.creator 60s cache", () => {
   });
 });
 
+describe("leaderboard.recentPosts 60s cache", () => {
+  it("serves an identical request from the cache — posts written after the miss stay invisible", async () => {
+    const c = await seedCreator();
+    await seedPost(c.id);
+
+    const first = await caller.leaderboard.recentPosts({});
+    expect(first).toHaveLength(1);
+
+    await seedPost(c.id);
+    const second = await caller.leaderboard.recentPosts({});
+    expect(second).toEqual(first);
+    expect(fake.entryCount()).toBe(1);
+  });
+
+  it("stays cached at 59s and recomputes past the 60s TTL", async () => {
+    const c = await seedCreator();
+    await seedPost(c.id);
+    const first = await caller.leaderboard.recentPosts({});
+    expect(first).toHaveLength(1);
+
+    await seedPost(c.id);
+
+    vi.setSystemTime(new Date(NOW.getTime() + 59_000));
+    const cached = await caller.leaderboard.recentPosts({});
+    expect(cached).toHaveLength(1);
+
+    vi.setSystemTime(new Date(NOW.getTime() + 61_000));
+    const recomputed = await caller.leaderboard.recentPosts({});
+    expect(recomputed).toHaveLength(2);
+  });
+
+  it("keys on the limit — the defaulted feed and an explicit limit never share an entry", async () => {
+    const c = await seedCreator();
+    await seedPost(c.id);
+    await seedPost(c.id);
+
+    // The broad default-limit feed is cached FIRST — a colliding key would
+    // hand its 2-post payload to the narrower call below.
+    const broad = await caller.leaderboard.recentPosts({});
+    expect(broad).toHaveLength(2);
+
+    const narrow = await caller.leaderboard.recentPosts({ limit: 1 });
+    expect(narrow).toHaveLength(1);
+    expect(fake.entryCount()).toBe(2);
+  });
+});
+
 describe("source verification", () => {
   const routerDir = dirname(fileURLToPath(import.meta.url));
   const read = (file: string) => readFileSync(join(routerDir, file), "utf8");
@@ -215,6 +262,9 @@ describe("source verification", () => {
     expect(read("get.ts")).toMatch(/cachedQuery\(\s*"leaderboard\.get"/);
     expect(read("creator.ts")).toMatch(
       /cachedQuery\(\s*"leaderboard\.creator"/,
+    );
+    expect(read("recent-posts.ts")).toMatch(
+      /cachedQuery\(\s*"leaderboard\.recentPosts"/,
     );
   });
 

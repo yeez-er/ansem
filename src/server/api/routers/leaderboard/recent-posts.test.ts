@@ -3,12 +3,19 @@
 // router + query layer — the home-page ticker. Latest approved posts across
 // platforms, newest-first by coalesce(posted_at, created_at), each embedding
 // its creator as an allow-listed PublicCreator. No fake timers: the procedure
-// never reads the clock (ordering instants are seeded explicitly).
+// never reads the clock (ordering instants are seeded explicitly). Task 19
+// wraps the procedure in the 60s response cache, so the fake incremental
+// cache must be installed FRESH per test — TTL behavior itself is owned by
+// cache.test.ts.
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { appRouter } from "@/server/api/root";
 import { createCallerFactory, type TRPCContext } from "@/server/api/trpc";
 import { posts } from "@/server/db/schema";
+import {
+  installFakeIncrementalCache,
+  uninstallFakeIncrementalCache,
+} from "@/tests/helpers/incremental-cache";
 import { makeSeeders } from "@/tests/helpers/seed";
 import {
   connectTestDb,
@@ -34,11 +41,13 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  uninstallFakeIncrementalCache();
   await testDb.pool.end();
 });
 
 beforeEach(async () => {
   await truncateAll(db);
+  installFakeIncrementalCache();
 });
 
 // Exact-keys allow-list sets (spec 007): PublicPost + the embedded creator.
