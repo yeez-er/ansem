@@ -5,7 +5,7 @@
 // denormalized columns. Scoring semantics (weights, clamping, ranking, the
 // UTC day window) live exclusively in @/lib/scoring — this file fetches rows
 // and feeds the engine. No ambient clock: callers pass `now`.
-import { and, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   computeScore,
@@ -58,15 +58,25 @@ export type PostContribution = {
   totals: MetricTotals;
 };
 
-// Visibility rule shared by every board: approved posts, non-banned creators,
-// optionally narrowed to one platform. Enforced here, server-side — never in
-// the UI.
-function visibleFilter(platform?: BoardPlatform) {
+// Visibility rule shared by every public read (boards + recent-posts feed):
+// approved posts, non-banned creators, optionally narrowed to one platform.
+// Enforced here, server-side — never in the UI. Requires posts ⋈ creators.
+export function visibleFilter(platform?: BoardPlatform) {
   return and(
     eq(posts.status, "approved"),
     eq(creators.isBanned, false),
     ...(platform === undefined ? [] : [eq(posts.platform, platform)]),
   );
+}
+
+// Public feed order, newest first: submitted posts carry no posted_at (spec
+// 004 never writes it), so they slot in by created_at instead of sorting
+// last; post id breaks exact ties deterministically.
+export function newestFirst() {
+  return [
+    desc(sql`coalesce(${posts.postedAt}, ${posts.createdAt})`),
+    asc(posts.id),
+  ];
 }
 
 // Pure fold: per-post contributions → ranked per-creator entries. Exported so

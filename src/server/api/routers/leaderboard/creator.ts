@@ -3,10 +3,14 @@
 // Summaries REUSE the board queries so creator-page numbers can never
 // disagree with the board (same window semantics, same visibility rules);
 // boards are small in v1 and Task 19 caches per input key.
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure } from "@/server/api/trpc";
-import { alltimeBoard, dailyBoard } from "@/server/db/queries/leaderboard";
+import {
+  alltimeBoard,
+  dailyBoard,
+  newestFirst,
+} from "@/server/db/queries/leaderboard";
 import { creators, posts } from "@/server/db/schema";
 import {
   type PublicCreator,
@@ -46,12 +50,7 @@ export const creator = publicProcedure
         .select()
         .from(posts)
         .where(and(eq(posts.creatorId, row.id), eq(posts.status, "approved")))
-        // Newest first. Submitted posts carry no posted_at (spec 004 never
-        // writes it), so they slot in by created_at instead of sorting last.
-        .orderBy(
-          desc(sql`coalesce(${posts.postedAt}, ${posts.createdAt})`),
-          asc(posts.id),
-        )
+        .orderBy(...newestFirst())
         .limit(CREATOR_POSTS_LIMIT),
     ]);
 
