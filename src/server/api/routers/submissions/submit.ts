@@ -1,15 +1,51 @@
-// Spec 002: submissions.submit — parse, canonicalize, dedupe, and queue a
-// post for tracking. Iteration 1 of 2: the rolling 24h rate limit
-// (TOO_MANY_REQUESTS, quota check BEFORE the resolution fetch) lands in
-// iteration 2 and gates right after parse.
+// Spec 002: submissions.submit — parse, canonicalize, dedupe, rate-limit, and
+// queue a post for tracking. The rolling 24h quota gates right after parse —
+// BEFORE the short-link resolution fetch (spec-review note #2).
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { z } from "zod";
 import { type ParsedPost, type Platform, parsePostUrl } from "@/lib/post-url";
-import { protectedProcedure } from "@/server/api/trpc";
-import { creators, posts } from "@/server/db/schema";
+import { protectedProcedure, type TRPCContext } from "@/server/api/trpc";
+import { creators, posts, resolutionAttempts } from "@/server/db/schema";
 
 const RESOLVE_TIMEOUT_MS = 5_000;
+const SUBMISSIONS_PER_24H = 20;
+const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Rolling-window quota, derived from the DB on every call (multi-instance
+// safe, survives restarts): posts this user actually inserted in the window
+// plus resolution attempts that did not convert into an insertion. Duplicates
+// insert nothing, so they consume nothing. Best-effort under concurrency —
+// the read-then-insert pair is not atomic, so a parallel burst can overshoot
+// the cap by its concurrency (logged in KNOWN_ISSUES.md; the limit is spam
+// control, not a balance).
+async function quotaUsed(
+  db: TRPCContext["db"],
+  userId: string,
+): Promise<number> {
+  const windowStart = new Date(Date.now() - QUOTA_WINDOW_MS);
+  const [insertedPosts, attempts] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.submittedByUserId, userId),
+          gte(posts.createdAt, windowStart),
+        ),
+      ),
+    db
+      .select({ n: count() })
+      .from(resolutionAttempts)
+      .where(
+        and(
+          eq(resolutionAttempts.userId, userId),
+          gte(resolutionAttempts.attemptedAt, windowStart),
+        ),
+      ),
+  ]);
+  return (insertedPosts[0]?.n ?? 0) + (attempts[0]?.n ?? 0);
+}
 
 function profileUrlFor(platform: Platform, handle: string): string {
   switch (platform) {
@@ -62,9 +98,33 @@ export const submit = protectedProcedure
       throw new TRPCError({ code: "BAD_REQUEST", message: "UNSUPPORTED_URL" });
     }
 
-    const post = parsed.needsResolution
-      ? await resolveShortLink(parsed.canonicalUrl)
-      : parsed;
+    // protectedProcedure guarantees a session; re-check narrows the type (the
+    // middleware deliberately never overrides ctx — see trpc.ts).
+    const { userId } = ctx;
+    if (userId === null) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    if ((await quotaUsed(ctx.db, userId)) >= SUBMISSIONS_PER_24H) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "RATE_LIMITED",
+      });
+    }
+
+    let attemptId: string | null = null;
+    let post: ParsedPost;
+    if (parsed.needsResolution) {
+      // Record BEFORE the fetch: a failed resolution leaves no post row, so
+      // the attempt row is what makes it consume quota.
+      const [attempt] = await ctx.db
+        .insert(resolutionAttempts)
+        .values({ userId })
+        .returning({ id: resolutionAttempts.id });
+      attemptId = attempt?.id ?? null;
+      post = await resolveShortLink(parsed.canonicalUrl);
+    } else {
+      post = parsed;
+    }
     const { platformPostId } = post;
     if (platformPostId === null) {
       // parser contract: only needsResolution results carry a null id
@@ -143,13 +203,20 @@ export const submit = protectedProcedure
           url: post.canonicalUrl,
           status,
           source: "submission",
-          submittedByUserId: ctx.userId,
+          submittedByUserId: userId,
         })
         .onConflictDoNothing({
           target: [posts.platform, posts.platformPostId],
         })
         .returning({ id: posts.id, status: posts.status });
       if (inserted) {
+        if (attemptId !== null) {
+          // The attempt converts into the insertion: one submission, one
+          // quota unit. Failed or deduped resolutions keep their attempt row.
+          await tx
+            .delete(resolutionAttempts)
+            .where(eq(resolutionAttempts.id, attemptId));
+        }
         return {
           postId: inserted.id,
           status: inserted.status,

@@ -1,9 +1,15 @@
 // @vitest-environment node
-// Task 6 (spec 002), iteration 1 of 2: submissions.submit core flow against a
-// REAL test database — parse → typed errors → banned gate → transactional
-// creator-upsert + post-insert dedupe (incl. distinct-transaction concurrency)
-// → TikTok short-link resolution with mocked fetch → AUTO_APPROVE flag.
-// The rolling 24h rate limit (TOO_MANY_REQUESTS) lands in iteration 2.
+// Task 6 (spec 002): submissions.submit against a REAL test database —
+// parse → typed errors → banned gate → transactional creator-upsert +
+// post-insert dedupe (incl. distinct-transaction concurrency) → TikTok
+// short-link resolution with mocked fetch → AUTO_APPROVE flag → rolling 24h
+// rate limit (DB-derived posts + resolution attempts).
+//
+// The rate-limit tests use REAL relative time, not fake timers: the rows the
+// procedure itself writes get their timestamps from Postgres defaultNow(),
+// which vi.useFakeTimers cannot touch — pinning only the JS clock would split
+// the two clocks. Seeding rows at now−1h/−23h/−25h against a 24h window keeps
+// every assertion deterministic with an hour of slack.
 import { eq } from "drizzle-orm";
 import {
   afterAll,
@@ -17,7 +23,7 @@ import {
 } from "vitest";
 import { appRouter } from "@/server/api/root";
 import { createCallerFactory, type TRPCContext } from "@/server/api/trpc";
-import { creators, posts } from "@/server/db/schema";
+import { creators, posts, resolutionAttempts } from "@/server/db/schema";
 import {
   connectTestDb,
   migrateFresh,
@@ -54,6 +60,15 @@ async function postCount() {
 async function creatorCount() {
   return (await db.select({ id: creators.id }).from(creators)).length;
 }
+async function attemptCount() {
+  return (
+    await db.select({ id: resolutionAttempts.id }).from(resolutionAttempts)
+  ).length;
+}
+
+function hoursAgo(h: number): Date {
+  return new Date(Date.now() - h * 60 * 60 * 1000);
+}
 
 async function seedCreator(
   overrides: Partial<typeof creators.$inferInsert> = {},
@@ -69,6 +84,28 @@ async function seedCreator(
     .returning();
   if (!row) throw new Error("creator seed returned no row");
   return row;
+}
+
+// Backdated posts already inserted by `userId` inside (or outside) the rolling
+// window — the DB-derived quota source. One dedicated creator so assertions on
+// creatorCount stay readable.
+async function seedQuotaPosts(userId: string, n: number, createdAt: Date) {
+  const creator = await seedCreator({
+    handle: "quotafarm",
+    profileUrl: "https://x.com/quotafarm",
+  });
+  await db.insert(posts).values(
+    Array.from({ length: n }, (_, i) => ({
+      creatorId: creator.id,
+      platform: "x" as const,
+      platformPostId: `1899900000000000${String(i).padStart(3, "0")}`,
+      url: `https://x.com/quotafarm/status/1899900000000000${String(i).padStart(3, "0")}`,
+      status: "pending" as const,
+      source: "submission" as const,
+      submittedByUserId: userId,
+      createdAt,
+    })),
+  );
 }
 
 beforeAll(async () => {
@@ -334,4 +371,143 @@ describe("TikTok short-link resolution (mocked redirect)", () => {
       expect(await creatorCount()).toBe(0);
     },
   );
+});
+
+describe("rolling 24h rate limit (DB-derived: inserted posts + resolution attempts)", () => {
+  const X_URL_2 = "https://x.com/blackbull/status/1801234567890999999";
+
+  it("the 21st submission in the window fails TOO_MANY_REQUESTS and writes nothing", async () => {
+    await seedQuotaPosts("user_fan_1", 20, hoursAgo(1));
+    const result = await callerAs("user_fan_1")
+      .submissions.submit({ url: X_URL })
+      .catch((e: unknown) => e);
+    expect(result).toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    expect(await postCount()).toBe(20);
+    // gate fires right after parse — before the creator upsert
+    expect(await creatorCount()).toBe(1);
+  });
+
+  it("the 20th submission still succeeds (boundary)", async () => {
+    await seedQuotaPosts("user_fan_1", 19, hoursAgo(23));
+    const result = await callerAs("user_fan_1").submissions.submit({
+      url: X_URL,
+    });
+    expect(result).toMatchObject({ alreadyTracked: false });
+    expect(await postCount()).toBe(20);
+  });
+
+  it("the window rolls: posts and attempts older than 24h no longer count", async () => {
+    await seedQuotaPosts("user_fan_1", 20, hoursAgo(25));
+    await db
+      .insert(resolutionAttempts)
+      .values({ userId: "user_fan_1", attemptedAt: hoursAgo(25) });
+    const result = await callerAs("user_fan_1").submissions.submit({
+      url: X_URL,
+    });
+    expect(result).toMatchObject({ alreadyTracked: false });
+  });
+
+  it("quota is per user — another user's window is untouched", async () => {
+    await seedQuotaPosts("user_fan_1", 20, hoursAgo(1));
+    const result = await callerAs("user_fan_2").submissions.submit({
+      url: X_URL,
+    });
+    expect(result).toMatchObject({ alreadyTracked: false });
+  });
+
+  it("an alreadyTracked duplicate does not consume quota", async () => {
+    await callerAs("user_fan_1").submissions.submit({ url: X_URL });
+    await seedQuotaPosts("user_fan_1", 18, hoursAgo(1)); // 19 of 20 used
+
+    const dup = await callerAs("user_fan_1").submissions.submit({ url: X_URL });
+    expect(dup).toMatchObject({ alreadyTracked: true });
+
+    // the 20th slot is still free — the duplicate consumed nothing
+    const twentieth = await callerAs("user_fan_1").submissions.submit({
+      url: TIKTOK_CANONICAL,
+    });
+    expect(twentieth).toMatchObject({ alreadyTracked: false });
+
+    const blocked = await callerAs("user_fan_1")
+      .submissions.submit({ url: X_URL_2 })
+      .catch((e: unknown) => e);
+    expect(blocked).toMatchObject({ code: "TOO_MANY_REQUESTS" });
+  });
+
+  it("failed resolution attempts consume quota even though no post row lands", async () => {
+    await seedQuotaPosts("user_fan_1", 19, hoursAgo(1));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new TypeError("fetch failed"),
+    );
+
+    const failed = await callerAs("user_fan_1")
+      .submissions.submit({ url: SHORT_LINK })
+      .catch((e: unknown) => e);
+    expect(failed).toMatchObject({ message: "UNRESOLVABLE_URL" });
+    expect(await attemptCount()).toBe(1);
+    expect(await postCount()).toBe(19);
+
+    // 19 posts + 1 attempt = 20 used → next submission is the 21st
+    const blocked = await callerAs("user_fan_1")
+      .submissions.submit({ url: X_URL })
+      .catch((e: unknown) => e);
+    expect(blocked).toMatchObject({ code: "TOO_MANY_REQUESTS" });
+  });
+
+  it("quota check runs BEFORE the redirect fetch — a blocked short link costs no outbound request", async () => {
+    await seedQuotaPosts("user_fan_1", 20, hoursAgo(1));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, {
+        status: 301,
+        headers: { location: TIKTOK_CANONICAL },
+      }),
+    );
+
+    const result = await callerAs("user_fan_1")
+      .submissions.submit({ url: SHORT_LINK })
+      .catch((e: unknown) => e);
+    expect(result).toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(await attemptCount()).toBe(0);
+  });
+
+  it("a successful short-link submission costs ONE unit — the attempt converts into the insertion", async () => {
+    await seedQuotaPosts("user_fan_1", 19, hoursAgo(1));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, {
+        status: 301,
+        headers: { location: TIKTOK_CANONICAL },
+      }),
+    );
+
+    // the 20th submission succeeds even via short link
+    const result = await callerAs("user_fan_1").submissions.submit({
+      url: SHORT_LINK,
+    });
+    expect(result).toMatchObject({ alreadyTracked: false });
+    expect(await attemptCount()).toBe(0);
+    expect(await postCount()).toBe(20);
+
+    const blocked = await callerAs("user_fan_1")
+      .submissions.submit({ url: X_URL })
+      .catch((e: unknown) => e);
+    expect(blocked).toMatchObject({ code: "TOO_MANY_REQUESTS" });
+  });
+
+  it("a deduped short link still consumes its resolution attempt (the fetch is never free)", async () => {
+    await callerAs("user_fan_2").submissions.submit({ url: TIKTOK_CANONICAL });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, {
+        status: 301,
+        headers: { location: TIKTOK_CANONICAL },
+      }),
+    );
+
+    const result = await callerAs("user_fan_1").submissions.submit({
+      url: SHORT_LINK,
+    });
+    expect(result).toMatchObject({ alreadyTracked: true });
+    expect(await attemptCount()).toBe(1);
+    expect(await postCount()).toBe(1);
+  });
 });

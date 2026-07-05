@@ -53,6 +53,26 @@ Template:
 - **Suggested fix**: How to resolve it
 -->
 
+### Submission rate-limit gate is read-then-insert, not atomic
+
+- **Severity**: YELLOW
+- **Category**: security
+- **First flagged**: TASK-06 (2026-07-05, self-reported at implementation)
+- **Occurrences**: 1
+- **Description**: `submissions.submit` derives the rolling 24h quota from the DB (posts + resolution attempts) and gates before inserting, but the count and the insert are not one atomic unit. A burst of N concurrent requests at 19/20 used can all read 19 and all insert.
+- **Impact**: The 20/day cap can overshoot by roughly the attacker's concurrency in a single burst. Bounded per burst (subsequent requests see the committed rows); it is spam-control erosion, not balance corruption.
+- **Suggested fix**: Per-user `pg_advisory_xact_lock` (or a re-check inside the insert transaction keyed on the lock) around count+insert. Note the short-link path must keep the pre-fetch gate outside any lock — never hold a lock across the 5s redirect fetch.
+
+### resolution_attempts has no retention/pruning
+
+- **Severity**: YELLOW
+- **Category**: performance
+- **First flagged**: TASK-06 (2026-07-05, self-reported at implementation)
+- **Occurrences**: 1
+- **Description**: Quota-ledger rows in `resolution_attempts` are only ever read for the trailing 24h but are never deleted, so the table grows for the lifetime of the app (bounded by real usage: ≤ ~20/user/day).
+- **Impact**: Slow unbounded growth; index keeps reads fast, but dead rows accumulate.
+- **Suggested fix**: Opportunistic per-user delete of `attempted_at < now − 24h` rows when recording a new attempt, or a cleanup statement in the Task 13/14 ingestion cron.
+
 ### Stale assertions in tests/test_prompt_validation.sh (18 pre-existing failures)
 
 - **Severity**: YELLOW

@@ -9,7 +9,13 @@ import { describe, expect, it } from "vitest";
 const SCHEMA_DIR = join(process.cwd(), "src", "server", "db", "schema");
 const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
 
-const EXPECTED_MODULES = ["enums", "creators", "posts", "metric-snapshots"];
+const EXPECTED_MODULES = [
+  "enums",
+  "creators",
+  "posts",
+  "metric-snapshots",
+  "resolution-attempts",
+];
 
 function schemaModuleFiles(): string[] {
   return readdirSync(SCHEMA_DIR).filter(
@@ -78,16 +84,21 @@ describe("generated migration (ORM metadata without a migration is documentation
       "metric_snapshots",
       '"post_id"\\s*,\\s*"captured_at"\\s+DESC',
     ],
+    [
+      "resolution_attempts_user_id_attempted_at_idx",
+      "resolution_attempts",
+      '"user_id"\\s*,\\s*"attempted_at"',
+    ],
   ])("creates index %s", (name, table, cols) => {
     expect(readMigrationSql()).toMatch(
       new RegExp(`CREATE INDEX "${name}" ON "${table}"[^;]*\\(${cols}`, "i"),
     );
   });
 
-  it("no explicit index duplicates a UNIQUE constraint's implicit index (exactly 3 indexes)", () => {
+  it("no explicit index duplicates a UNIQUE constraint's implicit index (exactly 4 indexes)", () => {
     const stmts =
       readMigrationSql().match(/CREATE (?:UNIQUE )?INDEX[^;]+/gi) ?? [];
-    expect(stmts).toHaveLength(3);
+    expect(stmts).toHaveLength(4);
     for (const stmt of stmts) {
       expect(stmt).not.toMatch(/\("platform"\s*,\s*"handle"\)/);
       expect(stmt).not.toMatch(/\("platform"\s*,\s*"platform_post_id"\)/);
