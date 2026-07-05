@@ -20,6 +20,10 @@ import {
 } from "vitest";
 import { appRouter } from "@/server/api/root";
 import { createCallerFactory, type TRPCContext } from "@/server/api/trpc";
+import {
+  installFakeIncrementalCache,
+  uninstallFakeIncrementalCache,
+} from "@/tests/helpers/incremental-cache";
 import { makeSeeders } from "@/tests/helpers/seed";
 import {
   connectTestDb,
@@ -50,12 +54,17 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  uninstallFakeIncrementalCache();
   await testDb.pool.end();
 });
 
 beforeEach(async () => {
   await truncateAll(db);
   vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+  // Task 19: the procedures are cached — a FRESH fake incremental cache per
+  // test keeps responses from bleeding across tests (cache.test.ts owns the
+  // caching behavior itself).
+  installFakeIncrementalCache();
 });
 
 afterEach(() => {
