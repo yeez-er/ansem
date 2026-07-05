@@ -1,3 +1,4 @@
+import { leaderboardRouter } from "./routers/leaderboard";
 import { submissionsRouter } from "./routers/submissions";
 import { createTRPCRouter, publicProcedure } from "./trpc";
 
@@ -9,6 +10,7 @@ export const appRouter = createTRPCRouter({
     })),
   }),
   submissions: submissionsRouter,
+  leaderboard: leaderboardRouter,
 });
 
 export type AppRouter = typeof appRouter;
