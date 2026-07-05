@@ -5,7 +5,7 @@
 import { and, eq, notExists, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getEnv, type ServerEnv } from "@/env";
-import { type Platform, profileUrlFor } from "@/lib/post-url";
+import { normalizeHandle, type Platform, profileUrlFor } from "@/lib/post-url";
 import { creators, metricSnapshots, posts } from "@/server/db/schema";
 import { errorForAll } from "@/server/metrics/adapter-util";
 import {
@@ -225,14 +225,6 @@ export async function applyPostResult(
     await mergePlaceholderCreator(tx, post, metrics);
   });
   return "refreshed";
-}
-
-// Providers return raw author handles; creators store them lowercased with no
-// leading '@' (schema invariant, matching parsePostUrl's normalization).
-function normalizeHandle(raw: string | null): string | null {
-  if (raw === null) return null;
-  const handle = raw.trim().replace(/^@/, "").toLowerCase();
-  return handle === "" ? null : handle;
 }
 
 async function findCreatorId(

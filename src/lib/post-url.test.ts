@@ -2,7 +2,13 @@
 // exact ParsedPost shapes per the spec's canonical-URL table. `toEqual` on the
 // full object rejects extra keys, so shape drift fails loudly.
 import { describe, expect, it } from "vitest";
-import { type ParsedPost, parsePostUrl, profileUrlFor } from "./post-url";
+import {
+  normalizeHandle,
+  type ParsedPost,
+  parsePostUrl,
+  profileUrlFor,
+  xPostUrl,
+} from "./post-url";
 
 describe("parsePostUrl — valid URLs (canonical rebuild per spec table)", () => {
   const cases: Array<{ name: string; input: string; expected: ParsedPost }> = [
@@ -216,5 +222,30 @@ describe("profileUrlFor — canonical profile URL per platform", () => {
     },
   ])("$platform → $expected", ({ platform, expected }) => {
     expect(profileUrlFor(platform, "blackbull")).toBe(expected);
+  });
+});
+
+describe("normalizeHandle — creators store handles lowercased, no leading '@'", () => {
+  // Shared by ingestion's placeholder merge (spec 004) and discovery's creator
+  // upsert (spec 005): providers return raw author handles.
+  it.each([
+    { raw: "@BlackBull ", expected: "blackbull" },
+    { raw: "MIXEDcase", expected: "mixedcase" },
+    { raw: "already_ok", expected: "already_ok" },
+    { raw: "", expected: null },
+    { raw: "@", expected: null },
+    { raw: null, expected: null },
+  ])("$raw → $expected", ({ raw, expected }) => {
+    expect(normalizeHandle(raw)).toBe(expected);
+  });
+});
+
+describe("xPostUrl — canonical X status URL", () => {
+  // Shared by the parser's canonical rebuild and discovery's post insert
+  // (spec 005): discovered posts store the canonical URL, never raw API data.
+  it("builds https://x.com/<handle>/status/<id>", () => {
+    expect(xPostUrl("blackbull", "1900000000000000001")).toBe(
+      "https://x.com/blackbull/status/1900000000000000001",
+    );
   });
 });

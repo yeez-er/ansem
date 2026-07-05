@@ -26,6 +26,23 @@ export function profileUrlFor(platform: Platform, handle: string): string {
   }
 }
 
+// Canonical X status URL — shared by the parser's canonical rebuild and
+// discovery's post insert (spec 005): stored URLs are always rebuilt, never
+// raw upstream data.
+export function xPostUrl(handle: string, id: string): string {
+  return `https://x.com/${handle}/status/${id}`;
+}
+
+// Creators store handles lowercased with no leading '@' (schema invariant,
+// matching parsePostUrl). Providers and discovery return raw author handles —
+// normalize before any (platform, handle) lookup or insert. Shared by
+// ingestion's placeholder merge (spec 004) and discovery's upsert (spec 005).
+export function normalizeHandle(raw: string | null): string | null {
+  if (raw === null) return null;
+  const handle = raw.trim().replace(/^@/, "").toLowerCase();
+  return handle === "" ? null : handle;
+}
+
 const X_HANDLE = /^[a-z0-9_]{1,15}$/;
 const TIKTOK_HANDLE = /^[a-z0-9._]{1,24}$/;
 const NUMERIC_ID = /^\d+$/;
@@ -69,7 +86,7 @@ function parseX(segments: string[]): ParsedPost | null {
     platform: "x",
     platformPostId: id,
     handle,
-    canonicalUrl: `https://x.com/${handle}/status/${id}`,
+    canonicalUrl: xPostUrl(handle, id),
   };
 }
 
