@@ -2,18 +2,23 @@ import { z } from "zod";
 
 // `KEY=` lines in dotenv files arrive as "" — normalize blank to undefined so
 // an empty value can never satisfy a presence check downstream.
-const optionalString = z.preprocess(
-  (value) =>
-    typeof value === "string" && value.trim() === "" ? undefined : value,
-  z.string().optional(),
-);
+const blankToUndefined = (value: unknown) =>
+  typeof value === "string" && value.trim() === "" ? undefined : value;
+
+const optionalString = z.preprocess(blankToUndefined, z.string().optional());
 
 // Optional feature flags must be exactly "true"/"false" — a typo like "yes"
 // fails the boot-time parse instead of silently meaning false.
 const optionalBooleanString = z.preprocess(
-  (value) =>
-    typeof value === "string" && value.trim() === "" ? undefined : value,
+  blankToUndefined,
   z.enum(["true", "false"]).optional(),
+);
+
+// Metrics provider mode (spec 003): a typo like "socialdata" fails boot
+// instead of silently selecting the dev/prod default.
+const optionalProviderMode = z.preprocess(
+  blankToUndefined,
+  z.enum(["mock", "live"]).optional(),
 );
 
 const serverEnvSchema = z.object({
@@ -27,7 +32,10 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_CLERK_SIGN_IN_URL: optionalString,
   NEXT_PUBLIC_CLERK_SIGN_UP_URL: optionalString,
   CRON_SECRET: optionalString,
-  METRICS_PROVIDER: optionalString,
+  METRICS_PROVIDER: optionalProviderMode,
+  METRICS_PROVIDER_X: optionalProviderMode,
+  METRICS_PROVIDER_TIKTOK: optionalProviderMode,
+  METRICS_PROVIDER_INSTAGRAM: optionalProviderMode,
   X_BEARER_TOKEN: optionalString,
   SOCIALDATA_API_KEY: optionalString,
   APIFY_TOKEN: optionalString,

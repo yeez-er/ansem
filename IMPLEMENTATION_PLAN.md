@@ -151,6 +151,7 @@
 - **Test strategy**: unit tests with fake timers; adversarial never-throws test (see Task 9 pattern applied per provider).
 - **Files to create**: `src/server/metrics/provider.ts` (types + `getProvider(platform)` registry), `src/server/metrics/mock-provider.ts`.
 - **Files to modify**: `src/env.ts`, `.env.example` (`METRICS_PROVIDER` + per-platform overrides).
+- **Progress (2026-07-05 — DONE)**: Resumed a prior iteration's RED tests (tests predate source in the diff). `provider.ts`: typed never-throw contract (`MetricsResult` ok/error union with `NOT_FOUND`/`RATE_LIMITED`/`PROVIDER_ERROR`, bigint `PostMetrics` incl. nullable author metadata for the Task 13 placeholder merge) + registry — `resolveProviderMode` (per-platform `METRICS_PROVIDER_{X,TIKTOK,INSTAGRAM}` overrides beat the global; enum-validated `mock|live` at boot so typos fail the parse) and `getProvider` with an empty `LIVE_PROVIDERS` slot Tasks 9–11 register into, gated on their keys. Dev → mock whenever no live adapter exists (even `mode=live`); production → `null`, with a 27-combination mode/override sweep proving mock data is never selectable there. `mock-provider.ts`: FNV-1a seeded per `(platform, platformPostId)`; `postedAt` anchored Jan–Mar 2026 (independent of the clock, never drifts); views grow strictly (≥ 1/s) with engagement as fixed per-post view fractions (structurally non-zero divisors); `capturedAt` from the pinned clock; malformed refs skipped, never rejects (control-tested rejection matcher).
 
 ### Task 9: `XApiMetricsProvider` (official X API v2, feature-flagged)
 
@@ -589,7 +590,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 5: parsePostUrl parser
 - [x] Task 6: submissions.submit
 - [x] Task 7: Scoring engine
-- [ ] Task 8: Provider interface + registry + mock
+- [x] Task 8: Provider interface + registry + mock
 - [ ] Task 9: X API provider
 - [ ] Task 10: SocialData provider
 - [ ] Task 11: Apify provider

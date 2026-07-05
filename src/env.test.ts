@@ -63,6 +63,35 @@ describe("parseServerEnv", () => {
     ).toThrowError(/AUTO_APPROVE_SUBMISSIONS/);
   });
 
+  it("METRICS_PROVIDER accepts only mock/live (blank normalizes to undefined)", () => {
+    expect(
+      parseServerEnv({ ...VALID, METRICS_PROVIDER: "mock" }).METRICS_PROVIDER,
+    ).toBe("mock");
+    expect(
+      parseServerEnv({ ...VALID, METRICS_PROVIDER: "live" }).METRICS_PROVIDER,
+    ).toBe("live");
+    expect(
+      parseServerEnv({ ...VALID, METRICS_PROVIDER: "" }).METRICS_PROVIDER,
+    ).toBeUndefined();
+    expect(() =>
+      parseServerEnv({ ...VALID, METRICS_PROVIDER: "socialdata" }),
+    ).toThrowError(/METRICS_PROVIDER/);
+  });
+
+  it("per-platform provider overrides accept only mock/live and default undefined", () => {
+    const env = parseServerEnv({
+      ...VALID,
+      METRICS_PROVIDER_X: "live",
+      METRICS_PROVIDER_TIKTOK: "",
+    });
+    expect(env.METRICS_PROVIDER_X).toBe("live");
+    expect(env.METRICS_PROVIDER_TIKTOK).toBeUndefined();
+    expect(env.METRICS_PROVIDER_INSTAGRAM).toBeUndefined();
+    expect(() =>
+      parseServerEnv({ ...VALID, METRICS_PROVIDER_INSTAGRAM: "yes" }),
+    ).toThrowError(/METRICS_PROVIDER_INSTAGRAM/);
+  });
+
   it("strips unknown keys (allow-list output, process.env never leaks through)", () => {
     const env = parseServerEnv({ ...VALID, PATH: "/usr/bin", HOME: "/root" });
     expect(env).not.toHaveProperty("PATH");
