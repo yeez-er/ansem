@@ -4,8 +4,9 @@
 // contract with a control-tested matcher.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Platform } from "@/lib/post-url";
+import { metricsOf } from "@/tests/helpers/metrics";
 import { MockMetricsProvider } from "./mock-provider";
-import type { MetricsProvider, MetricsResult, PostRef } from "./provider";
+import type { MetricsProvider, PostRef } from "./provider";
 
 const NOW = new Date("2026-07-06T12:00:00.000Z");
 
@@ -14,17 +15,6 @@ const ref = (id: string, platform: Platform = "x"): PostRef => ({
   platformPostId: id,
   url: `https://example.com/${id}`,
 });
-
-// Narrow to the ok branch or fail loudly — keeps every assertion below
-// unconditional (a not-ok result can never silently skip assertions).
-function metricsOf(result: MetricsResult | undefined) {
-  if (!result?.ok) {
-    throw new Error(
-      `expected an ok MetricsResult, got ${JSON.stringify(result)}`,
-    );
-  }
-  return result.metrics;
-}
 
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW });

@@ -5,6 +5,7 @@
 import type { ServerEnv } from "@/env";
 import type { Platform } from "@/lib/post-url";
 import { MockMetricsProvider } from "./mock-provider";
+import { SocialDataProvider } from "./socialdata-provider";
 import { XApiMetricsProvider } from "./x-api-provider";
 
 export type PostRef = {
@@ -53,16 +54,23 @@ export function resolveProviderMode(
   return env[OVERRIDE_KEY[platform]] ?? env.METRICS_PROVIDER;
 }
 
-// Live adapters register here: SocialData (Task 10) replaces the X slot when
-// it lands; Apify (Task 11) fills tiktok/instagram — each factory gates on
-// its own API keys and returns null when they are absent.
+// Live adapters register here: Apify (Task 11) fills tiktok/instagram — each
+// factory gates on its own API keys and returns null when they are absent.
 const LIVE_PROVIDERS: Partial<
   Record<Platform, (env: ServerEnv) => MetricsProvider | null>
 > = {
-  x: (env) =>
-    env.X_BEARER_TOKEN
-      ? new XApiMetricsProvider({ bearerToken: env.X_BEARER_TOKEN })
-      : null,
+  // SocialData is the designated X refresh path (spec 003: $0.20/1k vs $5/1k
+  // official), so its key outranks the bearer token; the official adapter
+  // stays as the fallback when only X_BEARER_TOKEN is configured.
+  x: (env) => {
+    if (env.SOCIALDATA_API_KEY) {
+      return new SocialDataProvider({ apiKey: env.SOCIALDATA_API_KEY });
+    }
+    if (env.X_BEARER_TOKEN) {
+      return new XApiMetricsProvider({ bearerToken: env.X_BEARER_TOKEN });
+    }
+    return null;
+  },
 };
 
 export function getProvider(

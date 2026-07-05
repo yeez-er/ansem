@@ -1,6 +1,13 @@
 // Task 9 (spec 003): official X API v2 adapter — batch GET /2/tweets (≤ 100
 // ids per call) mapping public_metrics to bigint PostMetrics. Never throws:
 // every upstream failure degrades to a typed MetricsResult error.
+import {
+  asRecord,
+  dateOrNull,
+  errorForAll,
+  stringOrNull,
+  toBigInt,
+} from "./adapter-util";
 import type {
   MetricsProvider,
   MetricsResult,
@@ -73,20 +80,6 @@ export class XApiMetricsProvider implements MetricsProvider {
   }
 }
 
-function errorForAll(
-  ids: string[],
-  error: "RATE_LIMITED" | "PROVIDER_ERROR",
-  retryable: boolean,
-): Map<string, MetricsResult> {
-  return new Map(ids.map((id) => [id, { ok: false, error, retryable }]));
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
 function mapBody(
   ids: string[],
   body: unknown,
@@ -154,8 +147,6 @@ function mapTweet(
 
   const author =
     typeof tweet.author_id === "string" ? users.get(tweet.author_id) : null;
-  const postedAt =
-    typeof tweet.created_at === "string" ? new Date(tweet.created_at) : null;
 
   return {
     views: toBigInt(metrics.impression_count),
@@ -163,24 +154,9 @@ function mapTweet(
     comments: toBigInt(metrics.reply_count),
     shares: toBigInt(metrics.retweet_count) + toBigInt(metrics.quote_count),
     capturedAt,
-    postedAt: postedAt && !Number.isNaN(postedAt.getTime()) ? postedAt : null,
+    postedAt: dateOrNull(tweet.created_at),
     authorHandle: stringOrNull(author?.username),
     authorDisplayName: stringOrNull(author?.name),
     authorAvatarUrl: stringOrNull(author?.profile_image_url),
   };
-}
-
-function stringOrNull(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
-// JSON numbers are exact up to 2^53 − 1, which covers real X counts; anything
-// non-numeric or unsafe throws and the tweet degrades to PROVIDER_ERROR.
-function toBigInt(value: unknown): bigint {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
-    throw new Error(
-      `expected a non-negative safe integer, got ${String(value)}`,
-    );
-  }
-  return BigInt(value);
 }
