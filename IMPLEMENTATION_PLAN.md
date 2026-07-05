@@ -135,6 +135,7 @@
   - Source verification: no `/` on metric values; `DEFAULT_WEIGHTS` (views 1 / likes 30 / comments 60 / shares 90) is the ONLY weight definition in the codebase
 - **Test strategy**: unit tests with pinned fake timers + property test; source verification for weights/division rules.
 - **Files to create**: `src/lib/scoring.ts`, `src/lib/scoring.test.ts`.
+- **Progress (2026-07-05 — DONE)**: All four functions landed pure (zero imports — the division-ban source check doubles as an import ban). Rank-tie semantics pinned: ranks tie on equal SCORE only (ids are unique, so a full-chain tie is impossible and (1,2,2,4) would otherwise be unreachable); views/postedAt/id fix display order within a tie block. 39 tests: hand-computed spec values (1510n), >2^53 bigint exactness, decoy-clock fake timers proving zero ambient reads, DST/year boundaries, input-mutation guards, 60-run seeded property test (permutation-independent order + rank arithmetic), control-tested division matcher, UTC-only API ban, and a src-wide sweep pinning DEFAULT_WEIGHTS as the only weight definition (declarations + literals; imports stay legal). Inertness regression test deliberately deferred to Task 32 — the engine's consumers (17/20) don't exist yet.
 
 ---
 
@@ -587,7 +588,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 4: Clerk core (009A)
 - [x] Task 5: parsePostUrl parser
 - [x] Task 6: submissions.submit
-- [ ] Task 7: Scoring engine
+- [x] Task 7: Scoring engine
 - [ ] Task 8: Provider interface + registry + mock
 - [ ] Task 9: X API provider
 - [ ] Task 10: SocialData provider
