@@ -583,7 +583,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 2: tRPC + Drizzle + env validation
 - [x] Task 3: Drizzle schema + migration
 - [x] Task 4: Clerk core (009A)
-- [ ] Task 5: parsePostUrl parser
+- [x] Task 5: parsePostUrl parser
 - [ ] Task 6: submissions.submit
 - [ ] Task 7: Scoring engine
 - [ ] Task 8: Provider interface + registry + mock
