@@ -226,6 +226,7 @@
   - Idempotent: immediate re-run appends snapshots without inflating scores (delta semantics)
 - **Test strategy**: integration test on the route handler (auth paths); source verification for timing-safe compare + cron entry.
 - **Files to create**: `src/app/api/cron/refresh-metrics/route.ts`. **Modify**: `vercel.json`, `src/env.ts`, `.env.example` (`CRON_SECRET`).
+- **Progress (2026-07-05 — DONE)**: Thin route landed per Task 13's note: constant-time bearer auth → `refreshMetrics(getDb())` → ONE structured summary line → `Response.json(summary)`; spec 004's degraded guard honored (degraded run still 200 but the line goes to `console.error`, not `console.info`); orchestration rejection (DB outage) → structured `refresh_metrics.failed` + 500, never an unhandled rejection. **Deviation (verified against live Vercel cron docs)**: Vercel Cron invokes cron paths with **GET**, spec pins POST — one handler exported as BOTH `GET` and `POST` (POST-only would 405 every scheduled run; Task 28's manual-curl works with either; auth matrix tested over both methods). Auth extracted to `src/lib/cron-auth.ts` (pure, unit-tested — Task 16 imports it and should also export its handler as GET+POST): SHA-256 both sides then `timingSafeEqual`, so length mismatch neither throws nor leaks; missing header / unset / empty secret all fail closed (`Bearer undefined` → 401, empty body, orchestration never invoked). Source verification: naive-compare matcher (equality operator touching `secret`/`Bearer` template) CONTROL-tested on 4 deliberately-bad lines before trusting its negative — it caught a comment mentioning the operator during GREEN, proving it live; `vercel.json` cron pinned `{/api/cron/refresh-metrics, */30 * * * *}`; `export const maxDuration = 300` pinned dual-layer (Task 11's Apify 300s sync-ceiling note; literal export for Next's static analyzer). Route tests mock orchestration (Task 13's real-DB suite owns its behavior; idempotent re-run/delta semantics proven there per specs 001/006). Env: `CRON_SECRET` already in `src/env.ts`/`.env.example` since Tasks 1–2 — no changes needed.
 
 ---
 
@@ -599,9 +600,9 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 9: X API provider
 - [x] Task 10: SocialData provider
 - [x] Task 11: Apify provider
-- [ ] Task 12: selectDuePosts query
-- [ ] Task 13: refreshMetrics orchestration
-- [ ] Task 14: refresh-metrics cron route
+- [x] Task 12: selectDuePosts query
+- [x] Task 13: refreshMetrics orchestration
+- [x] Task 14: refresh-metrics cron route
 - [ ] Task 15: discovery_state schema + x-client
 - [ ] Task 16: discoverX orchestration + route
 - [ ] Task 17: Leaderboard SQL query layer
