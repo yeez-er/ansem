@@ -58,7 +58,7 @@ export function dayWindow(now: Date): ScoreWindow {
   return { start, end };
 }
 
-const ZERO_TOTALS: MetricTotals = {
+export const ZERO_TOTALS: MetricTotals = {
   views: 0n,
   likes: 0n,
   comments: 0n,

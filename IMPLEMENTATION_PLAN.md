@@ -273,6 +273,7 @@
   - Creator-entry `postedAt` for tie-break = earliest contributing `posted_at`, fallback creator `created_at`
 - **Test strategy**: seeded integration tests (`@vitest-environment node`) with hand-derived expected scores (spec values, not observed output); fake timers pin the window.
 - **Files to create**: `src/server/db/queries/leaderboard.ts`.
+- **Progress (2026-07-06 — DONE)**: `dailyBoard(db, {now, platform?})` + `alltimeBoard(db, {platform?})` + pure exported `aggregateBoard` land the spec-007 read path. Daily: ONE lateral-join query (baseline = newest snapshot STRICTLY before window.start — a snapshot exactly AT start is in-window latest, pinned by a hand-derived case where every classic mistake `<=`-baseline/first-in-window/row-summing yields a different score); scan bounded `latest_snapshot_at >= start − 2d` via exported `DAILY_SCAN_LOOKBACK_MS` (boundary-inclusive test + stale-post exclusion); zero in-window snapshots ⇒ exactly 0n with NO cross-window fallback — poisoned-denorm test proves the daily path never reads `latest_*`; scanned-but-idle creators stay on the board at 0 (documented semantic). Scoring consumed from `@/lib/scoring` (windowDelta/computeScore/rankEntries/dayWindow — weights and clamping stay single-sourced; computeScore is linear so scoring per-creator sums of clamped per-post deltas equals summing per-post delta scores). No-N+1 proven BEHAVIORALLY: `pool.query` spy shows ≤2 round-trips for a 12-creator board. All-time: pure denorm reader (suite seeds ZERO snapshot rows — proves no snapshot join), never-observed posts hold no rank and don't inflate postCount. postedAt tie-break = earliest contributing posted_at, fallback creator created_at (both asserted directly); competition ranking (1,1,3) with views-desc display order; 2^53+1 views round-trip exactly (single + summed). Status sweep (pending/rejected/removed with poisoned metrics) + banned creators on both boards; platform filter param ready for Task 18. **Deviation from planned test strategy**: no fake timers — `now` is an explicit parameter (there is no ambient read to pin); source verification bans `Date.now()`/`new Date()` with control-tested matchers and pins scoring-engine consumption + the lookback constant. DRY: `ZERO_TOTALS` exported from scoring.ts at its 2nd occurrence (scoring's zero-imports pin unaffected); `seedSnapshot` added to shared `makeSeeders`; `visibleFilter` deliberately NOT merged with ingestion's `dueFilter` — due-for-refresh and publicly-visible are distinct domain predicates that only coincide today. Task 7's deferred scoring-engine inertness check now has its live caller (Task 32 pins it).
 
 ### Task 18: `leaderboard` router — get / creator / recentPosts + DTO allow-lists
 
@@ -608,7 +609,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 14: refresh-metrics cron route
 - [x] Task 15: discovery_state schema + x-client
 - [x] Task 16: discoverX orchestration + route
-- [ ] Task 17: Leaderboard SQL query layer
+- [x] Task 17: Leaderboard SQL query layer
 - [ ] Task 18: Leaderboard router + DTOs
 - [ ] Task 19: Leaderboard caching
 - [ ] Task 20: Seed script + fixtures

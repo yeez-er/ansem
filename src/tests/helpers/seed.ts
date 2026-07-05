@@ -3,7 +3,7 @@
 // same way). One sequence per factory keeps natural keys unique within a
 // suite; truncation between tests never resets it, mirroring the originals.
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { creators, posts } from "@/server/db/schema";
+import { creators, metricSnapshots, posts } from "@/server/db/schema";
 
 export function makeSeeders(db: NodePgDatabase) {
   let seq = 0;
@@ -48,5 +48,17 @@ export function makeSeeders(db: NodePgDatabase) {
     return row;
   }
 
-  return { seedCreator, seedPost };
+  async function seedSnapshot(
+    postId: string,
+    overrides: Partial<typeof metricSnapshots.$inferInsert> = {},
+  ) {
+    const [row] = await db
+      .insert(metricSnapshots)
+      .values({ postId, ...overrides })
+      .returning();
+    if (!row) throw new Error("snapshot seed returned no row");
+    return row;
+  }
+
+  return { seedCreator, seedPost, seedSnapshot };
 }
