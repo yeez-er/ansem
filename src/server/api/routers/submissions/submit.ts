@@ -4,6 +4,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, count, eq, gte } from "drizzle-orm";
 import { z } from "zod";
+import { PLACEHOLDER_HANDLE_PREFIX } from "@/lib/creator-display";
 import { type ParsedPost, parsePostUrl, profileUrlFor } from "@/lib/post-url";
 import { protectedProcedure, type TRPCContext } from "@/server/api/trpc";
 import { creators, posts, resolutionAttempts } from "@/server/db/schema";
@@ -151,7 +152,8 @@ export const submit = protectedProcedure
     // No handle in the URL (IG shortcodes): deterministic placeholder creator,
     // canonical post URL as the profile stand-in until ingestion resolves the
     // author and merges it (spec 004).
-    const handle = post.handle ?? `placeholder:${platformPostId}`;
+    const handle =
+      post.handle ?? `${PLACEHOLDER_HANDLE_PREFIX}${platformPostId}`;
     const profileUrl = post.handle
       ? profileUrlFor(post.platform, post.handle)
       : post.canonicalUrl;

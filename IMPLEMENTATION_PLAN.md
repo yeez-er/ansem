@@ -358,6 +358,7 @@ Walkthrough:
   - Empty state: bull glyph + "No posts on the board yet. Be the first — submit your post." + CTA to `/submit`; error state: friendly retry card, no raw error
 - **Test strategy**: source verification for page structure (App Router server component — can't render in jsdom) + component tests for controls/client pieces; Playwright e2e for toggles (wait for expected row text, no fixed sleeps).
 - **Files to create**: `src/app/(public)/page.tsx`, `leaderboard-table.tsx`, `board-controls.tsx`, `recent-posts.tsx`.
+- **Progress (2026-07-06, scoped iteration 1 of 2)**: Presentational pieces landed — `leaderboard-table.tsx` + `recent-posts.tsx` (colocated in `src/app/(public)/`, both server-renderable: no state, no hooks) + shared `src/lib/creator-display.ts`; iteration 2 wires `page.tsx` + `board-controls.tsx` (URL-state period/platform toggles + countdown), load-more, empty/error states, e2e. `creator-display.ts`: `PLACEHOLDER_HANDLE_PREFIX` extracted at its 3rd logic site — submit.ts (builds) and refresh-metrics.ts (detects) refactored onto it, both real-DB suites green unchanged; source verification pins both consumers importing the module with NO re-inlined quoted literal (control-tested matcher; seed-data's `placeholder:` handles are fixture data, exempt; dto.ts's hit is a prose comment outside the swept set). `creatorLabel` → "Unclaimed creator" for placeholders else `@handle` — the raw `placeholder:` handle never renders (pinned via container.textContent in BOTH component suites). Table: rows ARE links to `/creator/[id]` (whole-row click = link semantics, accessible name from row text) in a div-grid, NOT `<table>` — chosen so the rank-1 gradient border is the standard p-px `bull-gradient` wrapper + `bg-background` inset (exactly-one-wrapper pinned); medals 🥇🥈🥉 `aria-hidden` on ranks 1–3 only; stat columns ride StatNumber (2^53+1 abbreviation/title pinned at the composed level); avatars paint as `aria-hidden` background-image behind a `SAFE_IMAGE_URL` allowlist — quote/paren/whitespace URLs degrade to the initial-letter fallback (CSS `url()` breakout guard, hostile-URL test asserts the fallback renders, observable regardless of jsdom's CSS parsing). Rail: cards link OUT (`target=_blank rel=noopener`), `latestSnapshotAt === null` → "— pending" with the denormalized 0 pinned ABSENT (strict `=== null`, never truthiness), null caption omits the line, empty feed renders null — the page owns empty states for both components (empty `entries`/`posts` → null, pinned). Types ride the router's exported `RecentPost` and dto's `PublicBoardEntry` (type-only imports — no parallel UI shapes to drift). 35 new tests (14 creator-display incl. source verification, 13 table, 8 rail); refresh-metrics + submit suites 49 green; typecheck/lint/build clean.
 
 ### Visual verify
 
@@ -618,7 +619,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 18: Leaderboard router + DTOs
 - [x] Task 19: Leaderboard caching
 - [x] Task 20: Seed script + fixtures
-- [ ] Task 21: Theme + shared components
+- [x] Task 21: Theme + shared components
 - [ ] Task 22: Board page `/`
 - [ ] Task 23: Creator page
 - [ ] Task 24: Submit page

@@ -5,6 +5,7 @@
 import { and, eq, notExists, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getEnv, type ServerEnv } from "@/env";
+import { isPlaceholderHandle } from "@/lib/creator-display";
 import { normalizeHandle, type Platform, profileUrlFor } from "@/lib/post-url";
 import { creators, metricSnapshots, posts } from "@/server/db/schema";
 import { errorForAll } from "@/server/metrics/adapter-util";
@@ -46,8 +47,6 @@ export type RefreshMetricsOptions = {
 };
 
 export type RefreshOutcome = "refreshed" | "removed" | "error";
-
-const PLACEHOLDER_PREFIX = "placeholder:";
 
 type Db = NodePgDatabase;
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -281,7 +280,7 @@ async function mergePlaceholderCreator(
     .select({ id: creators.id, handle: creators.handle })
     .from(creators)
     .where(eq(creators.id, post.creatorId));
-  if (!creator?.handle.startsWith(PLACEHOLDER_PREFIX)) return;
+  if (creator === undefined || !isPlaceholderHandle(creator.handle)) return;
 
   const existingId = await findCreatorId(tx, post.platform, resolved);
   if (existingId) {
