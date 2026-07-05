@@ -577,7 +577,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
      by checking the box. Do not convert this list to a table, and do not write the literal
      unchecked-checkbox token anywhere else in this file (comments included). -->
 
-- [ ] Task 1: Next.js scaffold + toolchain
+- [x] Task 1: Next.js scaffold + toolchain
 - [ ] Task 2: tRPC + Drizzle + env validation
 - [ ] Task 3: Drizzle schema + migration
 - [ ] Task 4: Clerk core (009A)

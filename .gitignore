@@ -1,7 +1,6 @@
+# factory
 .ralph-logs/
 .claude/agent-memory/
-e2e/test-results/
-e2e/report/
 E2E_FAILURES.md
 STABILIZE_FAILURES.md
 DEPS_REPORT.md
@@ -9,6 +8,40 @@ DEPLOY_REPORT.md
 .ralph-config
 .ralph-metrics.tsv
 
-.env
-.env.local
-.env*.local
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+e2e/test-results/
+e2e/report/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files — placeholders in .env.example are the only committed env file
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
