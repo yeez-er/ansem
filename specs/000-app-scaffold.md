@@ -13,7 +13,7 @@ A running Next.js application skeleton with the full toolchain wired — every l
 
 1. **Next.js app** (App Router, TypeScript strict, Tailwind, `src/` dir, ESLint) scaffolded in-place at repo root — must coexist with the factory files already present (`loop.sh`, `PROMPT_*.md`, `specs/`, `ralph/` stay untracked by the app build).
 2. **tRPC v11+** wiring: `src/server/api/trpc.ts` (context, `publicProcedure`), `root.ts` (empty `appRouter`), route handler `src/app/api/trpc/[trpc]/route.ts`, React Query client provider. Health procedure `system.health` returns `{ ok: true, time }`.
-3. **Drizzle + Neon**: `@neondatabase/serverless` + `drizzle-orm`, `drizzle.config.ts`, `db:generate` / `db:migrate` / `db:push` scripts. Connection from `DATABASE_URL`.
+3. **Drizzle + Postgres**: `drizzle-orm` with the **`pg` (node-postgres) driver** — NOT `@neondatabase/serverless`. Our functions run on the Node runtime, and `pg` speaks the standard wire protocol to BOTH the local dev Postgres (`postgresql://yasseral-hasan@localhost:5432/ansem_dev`, already provisioned; tests use `ansem_test`) and Neon in production (`sslmode=require`). `drizzle.config.ts`, `db:generate` / `db:migrate` / `db:push` scripts. Connection from `DATABASE_URL`.
 4. **Env validation**: zod-parsed `src/env.ts` — server envs validated at boot (build fails fast on missing required vars; optional vars typed as optional). Every spec's env vars get added here as they land.
 5. **Vitest** (unit + `@vitest-environment node` integration) with `pnpm test`; **Playwright** with `pnpm test:e2e` (chromium only), webServer config against `pnpm dev`.
 6. **Scripts** in `package.json` exactly matching `ralph/AGENTS.md`: `dev`, `build`, `test`, `lint`, `typecheck` (`tsc --noEmit`), `db:*`, `test:e2e`.

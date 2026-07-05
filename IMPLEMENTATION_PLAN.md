@@ -572,9 +572,10 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 
 ## Task Status
 
-<!-- Checkbox format is LOAD-BEARING: loop.sh exits the build loop when no `- [ ]` remains
-     in this file, and the build agent marks its completed task by checking the box.
-     Do not convert this list to a table. -->
+<!-- Checkbox format is LOAD-BEARING: loop.sh exits the build loop when this file contains
+     no remaining unchecked markdown checkbox, and the build agent marks its completed task
+     by checking the box. Do not convert this list to a table, and do not write the literal
+     unchecked-checkbox token anywhere else in this file (comments included). -->
 
 - [ ] Task 1: Next.js scaffold + toolchain
 - [ ] Task 2: tRPC + Drizzle + env validation
