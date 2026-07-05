@@ -21,6 +21,18 @@ const optionalProviderMode = z.preprocess(
   z.enum(["mock", "live"]).optional(),
 );
 
+// Numeric tunables (spec 004): must be a positive integer — "0", negatives,
+// fractions, and junk fail the boot-time parse instead of silently breaking
+// the ingestion batch bound.
+const optionalPositiveInt = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .regex(/^[1-9][0-9]*$/, { message: "must be a positive integer" })
+    .transform(Number)
+    .optional(),
+);
+
 const serverEnvSchema = z.object({
   DATABASE_URL: z
     .string()
@@ -39,6 +51,7 @@ const serverEnvSchema = z.object({
   X_BEARER_TOKEN: optionalString,
   SOCIALDATA_API_KEY: optionalString,
   APIFY_TOKEN: optionalString,
+  REFRESH_BATCH_SIZE: optionalPositiveInt,
   ADMIN_USER_IDS: optionalString,
   AUTO_APPROVE_SUBMISSIONS: optionalBooleanString,
 });

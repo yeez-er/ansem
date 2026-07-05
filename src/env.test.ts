@@ -92,6 +92,24 @@ describe("parseServerEnv", () => {
     ).toThrowError(/METRICS_PROVIDER_INSTAGRAM/);
   });
 
+  it("REFRESH_BATCH_SIZE parses to a positive integer (blank normalizes to undefined)", () => {
+    expect(
+      parseServerEnv({ ...VALID, REFRESH_BATCH_SIZE: "50" }).REFRESH_BATCH_SIZE,
+    ).toBe(50);
+    expect(
+      parseServerEnv({ ...VALID, REFRESH_BATCH_SIZE: "" }).REFRESH_BATCH_SIZE,
+    ).toBeUndefined();
+    expect(parseServerEnv(VALID).REFRESH_BATCH_SIZE).toBeUndefined();
+  });
+
+  it("REFRESH_BATCH_SIZE rejects junk, zero, negatives, and fractions at boot", () => {
+    for (const bad of ["abc", "0", "-5", "2.5"]) {
+      expect(() =>
+        parseServerEnv({ ...VALID, REFRESH_BATCH_SIZE: bad }),
+      ).toThrowError(/REFRESH_BATCH_SIZE/);
+    }
+  });
+
   it("strips unknown keys (allow-list output, process.env never leaks through)", () => {
     const env = parseServerEnv({ ...VALID, PATH: "/usr/bin", HOME: "/root" });
     expect(env).not.toHaveProperty("PATH");
