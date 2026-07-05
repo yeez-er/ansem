@@ -5,6 +5,7 @@
 import type { ServerEnv } from "@/env";
 import type { Platform } from "@/lib/post-url";
 import { MockMetricsProvider } from "./mock-provider";
+import { XApiMetricsProvider } from "./x-api-provider";
 
 export type PostRef = {
   platform: Platform;
@@ -52,12 +53,17 @@ export function resolveProviderMode(
   return env[OVERRIDE_KEY[platform]] ?? env.METRICS_PROVIDER;
 }
 
-// Live adapters register here: X API (Task 9), SocialData (Task 10), Apify
-// (Task 11) — each factory gates on its own API keys and returns null when
-// they are absent.
+// Live adapters register here: SocialData (Task 10) replaces the X slot when
+// it lands; Apify (Task 11) fills tiktok/instagram — each factory gates on
+// its own API keys and returns null when they are absent.
 const LIVE_PROVIDERS: Partial<
   Record<Platform, (env: ServerEnv) => MetricsProvider | null>
-> = {};
+> = {
+  x: (env) =>
+    env.X_BEARER_TOKEN
+      ? new XApiMetricsProvider({ bearerToken: env.X_BEARER_TOKEN })
+      : null,
+};
 
 export function getProvider(
   platform: Platform,

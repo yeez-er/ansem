@@ -163,6 +163,7 @@
   - `impression_count: 3000000000` survives bigint round-trip
 - **Test strategy**: unit tests with mocked fetch + recorded fixture shapes; control-tested never-throws assertion.
 - **Files to create**: `src/server/metrics/x-api-provider.ts` (+ registry wiring).
+- **Progress (2026-07-05 — DONE)**: Adapter landed behind the Task 8 contract. Batch `GET /2/tweets` chunked at 100 ids/call (150-ref test proves 2 calls covering every ref); `public_metrics` → bigint `PostMetrics` (`impression_count`=views, `retweet+quote`=shares; `3000000000` round-trips exactly via safe-integer-guarded `BigInt()`); author expansion (`expansions=author_id` + `user.fields`) fills the nullable author metadata for Task 13's placeholder merge, degrading to nulls when absent. Typed errors: 429 → exact `RATE_LIMITED` retryable for the whole batch, per-id `errors[]` entry (deleted/suspended/protected — all permanent) → `NOT_FOUND`, network throw/timeout + 5xx → retryable `PROVIDER_ERROR`, 4xx/malformed JSON/response gaps → non-retryable `PROVIDER_ERROR`; a defensive outer catch keeps `fetchMetrics` reject-proof (control-tested matcher, mirroring Task 8's pattern). 10s `AbortSignal.timeout` pinned dual-layer (signal asserted behaviorally, `10_000` by source verification). Registry: `LIVE_PROVIDERS.x` gates on `X_BEARER_TOKEN` (blank-normalized at boot, so `KEY=` can't enable it) — token set serves live in dev AND prod, mock override still wins in dev, prod still never sees mock; existing 27-combination sweep stayed green untouched. Note for Task 10: `metricsOf` test helper now exists in 2 test files — SocialData's suite makes 3, extract to a shared test helper then.
 
 ### Task 10: `SocialDataProvider` (X refresh path)
 
@@ -591,7 +592,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 6: submissions.submit
 - [x] Task 7: Scoring engine
 - [x] Task 8: Provider interface + registry + mock
-- [ ] Task 9: X API provider
+- [x] Task 9: X API provider
 - [ ] Task 10: SocialData provider
 - [ ] Task 11: Apify provider
 - [ ] Task 12: selectDuePosts query
