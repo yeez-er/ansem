@@ -84,6 +84,56 @@ Template:
 - **Suggested fix**: Either restore the asserted behaviors deliberately or update the assertions to the v13/v14 prompt contracts. Decide per assertion; some (plan-review verdict) may be worth restoring rather than deleting.
 - **Reference**: v14 upgrade session 2026-06-11
 
+### Quota gate runs before duplicate/banned lookup in submissions.submit
+
+- **Severity**: YELLOW
+- **Category**: ux (spec-002 violation)
+- **First flagged**: RETRO-HARDEN (2026-07-05, full-tree Codex review)
+- **Occurrences**: 1
+- **Description**: `submit.ts:96` enforces the 24h quota before the existing-post/banned lookup, so at 20/20 a canonical duplicate throws `TOO_MANY_REQUESTS` instead of returning `alreadyTracked: true` (spec 002 says duplicates never consume quota), and a banned duplicate reports rate-limit instead of `CREATOR_BANNED`.
+- **Suggested fix**: For canonical-id URLs, do the duplicate/banned lookup before the quota gate; only enforce quota when an insertion is actually needed. Short-link resolution attempts keep the pre-fetch gate.
+- **Reference**: RETRO_HARDEN_FINDINGS.md #1
+
+### Mixed clocks in the 24h quota window
+
+- **Severity**: YELLOW
+- **Category**: security
+- **First flagged**: RETRO-HARDEN (2026-07-05)
+- **Occurrences**: 1
+- **Description**: `submit.ts:26` computes `windowStart` from the app runtime clock but compares against Postgres-stamped `created_at`/`attempted_at` — clock skew widens or narrows the quota window.
+- **Suggested fix**: Derive the window in Postgres (`now() - interval '24 hours'`) so one clock both stamps and enforces.
+- **Reference**: RETRO_HARDEN_FINDINGS.md #2
+
+### Refresh budget spends per-platform, not in global stalest-first order
+
+- **Severity**: YELLOW
+- **Category**: data-integrity
+- **First flagged**: RETRO-HARDEN (2026-07-05)
+- **Occurrences**: 1
+- **Description**: `refresh-metrics.ts:72` regroups the stale-sorted selection by platform before spending `MAX_PROVIDER_CALLS_PER_RUN`, so under truncation fresher posts of the first platform jump staler posts of later platforms.
+- **Suggested fix**: Chunk the globally-sorted stream first, then dispatch chunks by platform; regression test with interleaved cross-platform staleness.
+- **Reference**: RETRO_HARDEN_FINDINGS.md #3
+
+### Mock provider handle collisions can merge unrelated placeholder creators (dev/test)
+
+- **Severity**: YELLOW
+- **Category**: data-integrity
+- **First flagged**: RETRO-HARDEN (2026-07-05)
+- **Occurrences**: 1
+- **Description**: `mock-provider.ts:74` synthesizes `authorHandle` as `mockcreator${seed % 997}` — distinct posts collide onto one synthetic author, and the placeholder merge in `refresh-metrics.ts` treats it as authoritative, re-pointing and deleting unrelated placeholder creators in dev/e2e.
+- **Suggested fix**: Make mock identities injective per post (embed the full `platformPostId`) or return `authorHandle: null` from the mock.
+- **Reference**: RETRO_HARDEN_FINDINGS.md #4
+
+### Smoke e2e passes on error pages
+
+- **Severity**: YELLOW
+- **Category**: test-quality
+- **First flagged**: RETRO-HARDEN (2026-07-05)
+- **Occurrences**: 1
+- **Description**: `e2e/smoke.spec.ts:3` asserts only 200 + non-empty body — a Next.js error shell satisfies both, so the spec-000 "no error overlay" criterion is unprotected.
+- **Suggested fix**: Assert an app-specific marker AND the absence of error-overlay landmarks (will be naturally superseded when Task 21+ gives `/` real content).
+- **Reference**: RETRO_HARDEN_FINDINGS.md #5
+
 ## Future Improvements
 
 ### Progressive disclosure refactor for CLAUDE.md template

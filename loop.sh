@@ -405,7 +405,7 @@ SESSION_COST=0
     [ "$MODE" = "refactor" ] && [ -n "${REFACTOR_SCOPE:-}" ] && echo "Scope:  $REFACTOR_SCOPE"
     [ $MAX_ITERATIONS -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations"
     echo "TDD:    ENABLED"
-    if [ "$MODE" = "build" ] && [ "${HARDEN:-true}" != "false" ]; then
+    if [ "$MODE" = "build" ] && [ "${HARDEN:-false}" != "false" ]; then
         echo "Harden: ENABLED (Codex)"
     else
         echo "Harden: DISABLED"
@@ -596,7 +596,8 @@ while true; do
     fi
 
     # ── CODEX HARDENING STAGE ──────────────────────────────────────────
-    if [ "$MODE" = "build" ] && [ "${HARDEN:-true}" != "false" ]; then
+    # Default OFF for this project (owner decision 2026-07-05). Re-enable per-run with HARDEN=true.
+    if [ "$MODE" = "build" ] && [ "${HARDEN:-false}" != "false" ]; then
         log "Running Codex hardening..."
 
         # Capture diff for context
