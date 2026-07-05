@@ -2,6 +2,7 @@
 // no configured live adapter. Same (platform, platformPostId) under the same
 // clock → identical metrics; advancing the clock grows views strictly and
 // engagement monotonically. Never rejects.
+import { fnv1a } from "@/lib/hash";
 import type { Platform } from "@/lib/post-url";
 import type {
   MetricsProvider,
@@ -9,16 +10,6 @@ import type {
   PostMetrics,
   PostRef,
 } from "./provider";
-
-// FNV-1a 32-bit: dependency-free deterministic seed from a string.
-function fnv1a(input: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
 
 // Mock posts are anchored in the past (Jan–Mar 2026) independent of the
 // current clock, so postedAt never drifts between calls and elapsed time —

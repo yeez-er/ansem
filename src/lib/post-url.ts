@@ -33,6 +33,18 @@ export function xPostUrl(handle: string, id: string): string {
   return `https://x.com/${handle}/status/${id}`;
 }
 
+// Canonical TikTok video URL — shared by the parser's canonical rebuild and
+// the seed fixtures (spec 010), extracted on the 2nd occurrence like xPostUrl.
+export function tiktokPostUrl(handle: string, id: string): string {
+  return `https://www.tiktok.com/@${handle}/video/${id}`;
+}
+
+// Canonical Instagram post URL: both /reel/ and /p/ forms canonicalize to
+// /reel/ (spec 002 table). IG URLs carry no author handle.
+export function igPostUrl(shortcode: string): string {
+  return `https://www.instagram.com/reel/${shortcode}/`;
+}
+
 // Creators store handles lowercased with no leading '@' (schema invariant,
 // matching parsePostUrl). Providers and discovery return raw author handles —
 // normalize before any (platform, handle) lookup or insert. Shared by
@@ -101,7 +113,7 @@ function parseTikTok(segments: string[]): ParsedPost | null {
     platform: "tiktok",
     platformPostId: id,
     handle,
-    canonicalUrl: `https://www.tiktok.com/@${handle}/video/${id}`,
+    canonicalUrl: tiktokPostUrl(handle, id),
   };
 }
 
@@ -121,7 +133,6 @@ function parseTikTokShortLink(segments: string[]): ParsedPost | null {
 }
 
 function parseInstagram(segments: string[]): ParsedPost | null {
-  // Both /reel/ and /p/ forms canonicalize to the /reel/ URL (spec 002 table).
   // Shortcodes are case-sensitive; IG URLs carry no author handle.
   const [kind, shortcode] = segments;
   if (kind !== "reel" && kind !== "p") return null;
@@ -130,6 +141,6 @@ function parseInstagram(segments: string[]): ParsedPost | null {
     platform: "instagram",
     platformPostId: shortcode,
     handle: null,
-    canonicalUrl: `https://www.instagram.com/reel/${shortcode}/`,
+    canonicalUrl: igPostUrl(shortcode),
   };
 }

@@ -25,6 +25,8 @@ Run these IN ORDER after implementing. ALL must pass before committing:
 pnpm db:seed   # idempotent — safe to re-run (spec 010)
 ```
 
+Admin moderation on seeded data: `ADMIN_USER_IDS` must contain your dev Clerk user id (the seed never touches Clerk).
+
 ## Database
 
 ```bash
