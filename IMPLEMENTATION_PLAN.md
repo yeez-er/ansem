@@ -578,7 +578,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
      unchecked-checkbox token anywhere else in this file (comments included). -->
 
 - [x] Task 1: Next.js scaffold + toolchain
-- [ ] Task 2: tRPC + Drizzle + env validation
+- [x] Task 2: tRPC + Drizzle + env validation
 - [ ] Task 3: Drizzle schema + migration
 - [ ] Task 4: Clerk core (009A)
 - [ ] Task 5: parsePostUrl parser
