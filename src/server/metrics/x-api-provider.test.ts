@@ -341,12 +341,15 @@ describe("registry wiring — X_BEARER_TOKEN gate", () => {
 });
 
 describe("XApiMetricsProvider — source verification", () => {
-  it("every request carries the spec 10s timeout via AbortSignal.timeout", () => {
+  it("routes every request through the shared XClient pipeline (Task 15: no duplicated X HTTP pipeline)", () => {
+    // The 10s timeout + typed error mapping moved to x-client.ts and are
+    // dual-layer pinned in x-client.test.ts; here we pin that the provider
+    // actually rides that pipeline instead of growing its own fetch again.
     const source = readFileSync(
       join(process.cwd(), "src/server/metrics/x-api-provider.ts"),
       "utf8",
     );
-    expect(source).toMatch(/REQUEST_TIMEOUT_MS = 10_000\b/);
-    expect(source).toMatch(/AbortSignal\.timeout\(REQUEST_TIMEOUT_MS\)/);
+    expect(source).toMatch(/import \{ XClient \} from "\.\/x-client"/);
+    expect(source).not.toMatch(/AbortSignal|\bfetchImpl \?\? fetch\b/);
   });
 });

@@ -240,6 +240,7 @@
   - `x-client.ts` shared low-level X fetch used by both the discovery orchestration and the X provider (no duplicated HTTP pipeline — extract on 2nd occurrence)
 - **Test strategy**: dual-layer schema test (barrel export source verification + migration runtime test); unit test for x-client error mapping.
 - **Files to create**: `src/server/db/schema/discovery-state.ts`, `src/server/metrics/x-client.ts`. **Modify**: `schema/index.ts`, new migration.
+- **Progress (2026-07-05 — DONE)**: `discovery_state` landed keyed on `platform` (enum pk — one cursor row per platform, pk violation proven against the real DB), nullable `cursor` (the row may exist before the first cursor commits; Task 16 writes `since_id` only after a batch commit), `updated_at` timestamptz `defaultNow`; barrel-exported + generated migration `0002_nice_zombie` (applies via the migrateFresh chain; structure pinned dual-layer — pk/nullable-cursor/updated_at regexes on the migration SQL + runtime insert/duplicate tests; `truncateAll` widened so DB suites stay isolated). `x-client.ts`: the X HTTP pipeline extracted from x-api-provider at its 2nd consumer (Task 16's discovery orchestration) — `XClient.get(path, params)` owns bearer auth, the 10s `AbortSignal.timeout` (dual-layer pin MOVED here from the provider suite), and the typed error map (429 → exact `RATE_LIMITED` retryable, network throw/timeout → retryable `PROVIDER_ERROR`, 5xx retryable / 4xx not, malformed JSON non-retryable), never rejects (control-tested matcher, Task 8 pattern). x-api-provider refactored onto it with its constructor signature unchanged — registry and all 108 metrics tests green untouched; its source-verification test repointed from the inline timeout literal to "imports XClient + no own fetch/AbortSignal" so the extraction cannot silently regress into a duplicated pipeline (valid-refactor-safe per wisdom), and x-client.test.ts pins the ≥1-live-caller inertness check. No env changes — `X_DISCOVERY_*` keys land with Task 16.
 
 ### Task 16: `discoverX` orchestration + `POST /api/cron/discover-x` route
 
@@ -603,7 +604,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 12: selectDuePosts query
 - [x] Task 13: refreshMetrics orchestration
 - [x] Task 14: refresh-metrics cron route
-- [ ] Task 15: discovery_state schema + x-client
+- [x] Task 15: discovery_state schema + x-client
 - [ ] Task 16: discoverX orchestration + route
 - [ ] Task 17: Leaderboard SQL query layer
 - [ ] Task 18: Leaderboard router + DTOs

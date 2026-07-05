@@ -15,6 +15,7 @@ const EXPECTED_MODULES = [
   "posts",
   "metric-snapshots",
   "resolution-attempts",
+  "discovery-state",
 ];
 
 function schemaModuleFiles(): string[] {
@@ -120,6 +121,18 @@ describe("generated migration (ORM metadata without a migration is documentation
         `CREATE TABLE (?:"public"\\.)?"${table}"[^;]*"${column}" bigint`,
         "i",
       ),
+    );
+  });
+
+  it("creates discovery_state keyed by platform with a nullable cursor (spec 005 since_id store)", () => {
+    const sql = readMigrationSql();
+    expect(sql).toMatch(
+      /CREATE TABLE "discovery_state" \([^;]*"platform" "(?:public"\.")?platform" PRIMARY KEY NOT NULL/,
+    );
+    // Nullable by design: the row may exist before the first cursor commits.
+    expect(sql).toMatch(/"cursor" text,/);
+    expect(sql).toMatch(
+      /CREATE TABLE "discovery_state" \([^;]*"updated_at" timestamp with time zone DEFAULT now\(\) NOT NULL/,
     );
   });
 

@@ -15,19 +15,16 @@ import type {
   PostMetrics,
   PostRef,
 } from "./provider";
+import { XClient } from "./x-client";
 
-const X_API_TWEETS_URL = "https://api.x.com/2/tweets";
 const MAX_IDS_PER_CALL = 100;
-const REQUEST_TIMEOUT_MS = 10_000;
 
 export class XApiMetricsProvider implements MetricsProvider {
   readonly platform = "x" as const;
-  private readonly bearerToken: string;
-  private readonly fetchImpl: typeof fetch;
+  private readonly client: XClient;
 
   constructor(options: { bearerToken: string; fetchImpl?: typeof fetch }) {
-    this.bearerToken = options.bearerToken;
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    this.client = new XClient(options);
   }
 
   async fetchMetrics(refs: PostRef[]): Promise<Map<string, MetricsResult>> {
@@ -37,34 +34,14 @@ export class XApiMetricsProvider implements MetricsProvider {
   }
 
   private async fetchBatch(ids: string[]): Promise<Map<string, MetricsResult>> {
-    let response: Response;
-    try {
-      const url = new URL(X_API_TWEETS_URL);
-      url.searchParams.set("ids", ids.join(","));
-      url.searchParams.set("tweet.fields", "public_metrics,created_at");
-      url.searchParams.set("expansions", "author_id");
-      url.searchParams.set("user.fields", "username,name,profile_image_url");
-      response = await this.fetchImpl(url, {
-        headers: { Authorization: `Bearer ${this.bearerToken}` },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-    } catch {
-      // Network failure or timeout — transient, worth retrying next run.
-      return errorForAll(ids, "PROVIDER_ERROR", true);
-    }
-
-    if (response.status === 429) return errorForAll(ids, "RATE_LIMITED", true);
-    if (!response.ok) {
-      return errorForAll(ids, "PROVIDER_ERROR", response.status >= 500);
-    }
-
-    let body: unknown;
-    try {
-      body = await response.json();
-    } catch {
-      return errorForAll(ids, "PROVIDER_ERROR", false);
-    }
-    return mapBody(ids, body, new Date());
+    const result = await this.client.get("/tweets", {
+      ids: ids.join(","),
+      "tweet.fields": "public_metrics,created_at",
+      expansions: "author_id",
+      "user.fields": "username,name,profile_image_url",
+    });
+    if (!result.ok) return errorForAll(ids, result.error, result.retryable);
+    return mapBody(ids, result.body, new Date());
   }
 }
 

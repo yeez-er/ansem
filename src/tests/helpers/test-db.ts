@@ -44,7 +44,7 @@ export async function migrateFresh({ pool, db }: TestDb): Promise<void> {
 
 export async function truncateAll(db: NodePgDatabase): Promise<void> {
   await db.execute(
-    sql`truncate table "creators", "posts", "metric_snapshots", "resolution_attempts" cascade`,
+    sql`truncate table "creators", "posts", "metric_snapshots", "resolution_attempts", "discovery_state" cascade`,
   );
 }
 

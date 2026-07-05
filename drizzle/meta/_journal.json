@@ -15,6 +15,13 @@
 			"when": 1783265919446,
 			"tag": "0001_watery_red_ghost",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1783279454150,
+			"tag": "0002_nice_zombie",
+			"breakpoints": true
 		}
 	]
 }

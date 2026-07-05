@@ -5,7 +5,12 @@
 // schema on every run, so TEST_DATABASE_URL must point at a DEDICATED test DB.
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { creators, metricSnapshots, posts } from "@/server/db/schema";
+import {
+  creators,
+  discoveryState,
+  metricSnapshots,
+  posts,
+} from "@/server/db/schema";
 import {
   connectTestDb,
   migrateFresh,
@@ -163,6 +168,32 @@ describe("bigint counts (X view counts overflow int4; big ones overflow Number)"
       .values({ postId: post.id, views: 3000000001n })
       .returning();
     expect(snap?.views).toBe(3000000001n);
+  });
+});
+
+describe("discovery_state cursor store (spec 005)", () => {
+  it("row with only a platform gets a null cursor and a defaulted updated_at", async () => {
+    const [row] = await db
+      .insert(discoveryState)
+      .values({ platform: "x" })
+      .returning();
+    expect(row).toMatchObject({ platform: "x", cursor: null });
+    expect(row?.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("duplicate platform violates the primary key (single cursor row per platform)", async () => {
+    await db
+      .insert(discoveryState)
+      .values({ platform: "x", cursor: "1900000000000000001" });
+    const err = await db
+      .insert(discoveryState)
+      .values({ platform: "x", cursor: "1900000000000000002" })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(pgError(err)).toMatchObject({
+      code: "23505",
+      constraint: "discovery_state_pkey",
+    });
   });
 });
 
