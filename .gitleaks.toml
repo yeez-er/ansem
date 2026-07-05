@@ -1,0 +1,11 @@
+# Gitleaks config — extends the default ruleset.
+# .env.example holds intentional documentation placeholders (sk_test_placeholder etc.);
+# gitleaks' stripe-access-token rule matches the sk_test_ prefix Clerk keys share.
+# Real secrets live only in gitignored .env.local — everything else stays scanned.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documentation placeholder values in the env template"
+paths = ['''\.env\.example$''']

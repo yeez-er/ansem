@@ -160,3 +160,8 @@ Template:
 
 - **Fixed in**: v14 upgrade (session 2026-06-11)
 - **How**: PROMPT_retro.md now requires `[verified: <evidence>]` or `[hypothesis]` tags on every entry (fail → investigate → VERIFY → distill), hypothesis→verified promotion, framework version tags, a Recurrence Check that tags `[recurred: PROJECT]` wisdom and proposes enforcement (hooks over docs), and verification-coverage reporting in the retro summary.
+
+## Security Gate Hold (auto-appended 2026-07-05) — RESOLVED 2026-07-05
+
+- Iterations 1, 4, 5 on `main`: gitleaks flagged `sk_test_placeholder`-shaped Clerk placeholder values in `.env.example` (the default `stripe-access-token` rule matches the shared `sk_test_` prefix). **False positives** — the file holds intentional documentation placeholders; real secrets live only in gitignored `.env.local` (verified untracked).
+- **Resolution**: `.gitleaks.toml` extends the default ruleset and allowlists only `.env.example`; `gitleaks git -c .gitleaks.toml` now reports 0 findings across all commits. The held pushes were carried to origin by iteration 6's clean push (verified: `main` = `origin/main`).
