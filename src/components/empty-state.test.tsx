@@ -39,4 +39,19 @@ describe("EmptyState", () => {
     render(<EmptyState message="Queue clear" />);
     expect(screen.queryByRole("link")).toBeNull();
   });
+
+  it("keeps the exact href and label on a reload CTA (error-retry variant)", () => {
+    // reload: true renders a plain document-request anchor — a same-URL
+    // <Link> soft-nav may serve the router cache instead of re-rendering the
+    // failed page. jsdom can't observe the navigation mode; the consumer pins
+    // `reload: true` by source (page.test.tsx).
+    render(
+      <EmptyState
+        message="The board hit a snag loading."
+        cta={{ href: "/?period=alltime", label: "Retry", reload: true }}
+      />,
+    );
+    const link = screen.getByRole("link", { name: "Retry" });
+    expect(link.getAttribute("href")).toBe("/?period=alltime");
+  });
 });
