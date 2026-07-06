@@ -4,6 +4,7 @@
 // bull-gradient border (gradient wrapper + background inset).
 
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { PlatformBadge } from "@/components/platform-badge";
 import { StatNumber } from "@/components/stat-number";
 import { creatorLabel } from "@/lib/creator-display";
@@ -13,27 +14,6 @@ const MEDALS: Partial<Record<number, string>> = { 1: "🥇", 2: "🥈", 3: "🥉
 
 const ROW_GRID =
   "grid grid-cols-[3.5rem_minmax(0,1fr)_repeat(5,4.5rem)_3.5rem] items-center gap-x-3 px-4";
-
-// Avatars paint as background images; a URL that could break out of the CSS
-// url() context (quotes, parens, whitespace) is treated as missing instead.
-const SAFE_IMAGE_URL = /^https?:\/\/[^\s"'()\\]+$/;
-
-function Avatar({ url, label }: { url: string | null; label: string }) {
-  const safeUrl = url !== null && SAFE_IMAGE_URL.test(url) ? url : null;
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10 bg-cover bg-center text-sm text-foreground/70"
-      style={
-        safeUrl === null ? undefined : { backgroundImage: `url("${safeUrl}")` }
-      }
-    >
-      {safeUrl === null
-        ? label.replace(/^@/, "").charAt(0).toUpperCase()
-        : null}
-    </span>
-  );
-}
 
 function BoardRow({ entry }: { entry: PublicBoardEntry }) {
   const label = creatorLabel(entry.creator);

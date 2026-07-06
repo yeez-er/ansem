@@ -390,6 +390,7 @@ Walkthrough:
 - **Test strategy**: source verification (server component structure, `notFound()` on null); e2e: seeded creator renders tiles, unknown uuid → styled 404.
 - **Files to create**: `src/app/(public)/creator/[id]/page.tsx`.
 - **Notes**: async `params` (Next 15+) — verify current pattern via nextjs skill.
+- **Progress (2026-07-06 — DONE)**: `/creator/[id]` landed as an RSC through the real tRPC caller (60s cache, `force-dynamic` — Task 22 reasoning): header with shared `Avatar` (extracted to `src/components/avatar.tsx` at its 2nd consumer, CSS-`url()` breakout guard intact, board table refactored onto it — its suite green unchanged), displayName secondary line, source-profile link (`target=_blank rel=noopener`), 4 stat tiles (all-time score / today's score / total views / posts — posts = the board's `postCount`, so profile numbers never disagree with the board), posts table rows linking out with per-post scores; `latestSnapshotAt: null` → "— pending" with the denorm zeros pinned ABSENT (2nd copy of the display string; extract at the 3rd). 404 contract: malformed id (page mirrors the router's `z.uuid` — a param the API would reject 404s without a BAD_REQUEST leak or a DB hit; zod accepts the nil uuid, so the e2e all-zeros id exercises the real query→null path), unknown uuid, and banned creator all `notFound()` → NEW root `src/app/not-found.tsx` (styled 404 inside the root layout; also serves unmatched URLs and Task 26's admin `notFound()` for free); a data-layer failure renders the retry card INSTEAD — an outage never masquerades as "creator does not exist" (`notFound()` thrown outside the rejection handler; pinned by the control-tested `incrementalCache`-marker test, board precedent). Tests ride Task 22's real-RSC-render pattern: awaited with real `params` Promises → `renderToStaticMarkup` against the test DB; notFound cases assert the thrown `NEXT_HTTP_ERROR_FALLBACK;404` digest (verified against installed Next 16.2.10) via an unconditionally-captured outcome (never a vacuous negative); tile assertions scoped by a `<dt>`→`<dd>` extractor with hand-derived values (all-time 1,510; today TRUE 0 for a stale-only creator vs 1,510 with an in-window snapshot — clock-independent via fixed-past `OBSERVED_AT`). e2e (`e2e/creator.spec.ts`): board row → profile (h1 `@bullpostoor` — the page owns the app's only h1), ordered `dt` sweep of the 4 tile labels, outbound post-link attrs; unknown id → response status 404 + branded copy + root-layout chrome. 12 new vitest tests + 2 e2e; affected suites (table, board page) green; full e2e 14/14; typecheck/lint/build clean. Task 23 complete.
 
 ### Visual verify
 
@@ -622,7 +623,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 20: Seed script + fixtures
 - [x] Task 21: Theme + shared components
 - [x] Task 22: Board page `/`
-- [ ] Task 23: Creator page
+- [x] Task 23: Creator page
 - [ ] Task 24: Submit page
 - [ ] Task 25: adminProcedure + admin router
 - [ ] Task 26: Admin pending queue UI
