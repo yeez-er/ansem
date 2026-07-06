@@ -4,7 +4,7 @@
 
 ## Summary
 
-**Status**: Planned — ready for `./loop.sh build`.
+**Status**: PAUSED 2026-07-06 (owner machine restart) — **23/33 tasks complete**, 10 pending (Tasks 24–33). Resume with `./loop.sh 20` from repo root; the checkbox list below is the exact work queue. See `PROGRESS_SUMMARY.md` for the full state handoff.
 
 **Scope**: 11 specs covering the full $ANSEM creator leaderboard: app scaffold, data model, URL submission, metrics provider layer (SocialData/Apify/X API/mock), ingestion cron, X discovery, scoring engine, leaderboard API, public UI, auth + admin moderation, and seed data. **33 tasks.**
 
