@@ -134,7 +134,14 @@ Template:
 - **Suggested fix**: Assert an app-specific marker AND the absence of error-overlay landmarks (will be naturally superseded when Task 21+ gives `/` real content).
 - **Reference**: RETRO_HARDEN_FINDINGS.md #5
 
-## Future Improvements
+### Idempotent seed's date-relative story decays — daily board goes to zeros a day later
+
+- **Severity**: YELLOW
+- **Category**: test-quality
+- **First flagged**: monitoring session (2026-07-06, observed live)
+- **Occurrences**: 1
+- **Description**: Seed snapshots are date-relative to the FIRST run; re-runs skip existing rows by natural key, so a day later every seeded post's snapshots fall outside the current UTC day window and the daily board renders all-zero ties (observed: 3 creators tied #1 score=0). Any e2e asserting daily-board content flakes when the dev/test DB outlives the UTC day it was seeded in.
+- **Suggested fix**: Either (a) seed refreshes the story on re-run when the newest snapshot is older than the current window (append fresh in-window snapshots for the "spiking" posts, keeping idempotence for identity rows), or (b) e2e resets + reseeds a fresh schema per run and asserts within the seeded day. Task 31 (full e2e journey) must pick one before it lands.
 
 ### Progressive disclosure refactor for CLAUDE.md template
 
