@@ -134,6 +134,16 @@ Template:
 - **Suggested fix**: Assert an app-specific marker AND the absence of error-overlay landmarks (will be naturally superseded when Task 21+ gives `/` real content).
 - **Reference**: RETRO_HARDEN_FINDINGS.md #5
 
+### No audit table for admin moderation actions (accepted v1 debt)
+
+- **Severity**: YELLOW
+- **Category**: data-integrity
+- **First flagged**: TASK-25 (2026-07-07, accepted at implementation per spec 009B)
+- **Occurrences**: 1
+- **Description**: Admin mutations (`reviewPost`, `banCreator`, and the next-iteration `refreshPost`) emit ONE structured `console.info` audit line (`{ event: "admin.audit", actor, action, target }`) via `logAdminAudit`, but there is no persisted `moderation_audit` table. History lives only in the log stream and is not queryable in-app.
+- **Impact**: No durable, queryable record of who approved/rejected/banned what and when; log retention is the only trail. Acceptable for v1 (small operator set, low volume) per spec 009B.
+- **Suggested fix**: Add an append-only `moderation_audit(id, actor_user_id, action, target_id, created_at)` table and write a row inside each admin mutation's transaction; keep the structured log line as a secondary sink.
+
 ### Idempotent seed's date-relative story decays — daily board goes to zeros a day later
 
 - **Severity**: YELLOW

@@ -7,6 +7,7 @@ vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn() }));
 
 import { auth } from "@clerk/nextjs/server";
 import {
+  adminProcedure,
   createCallerFactory,
   createTRPCContext,
   createTRPCRouter,
@@ -98,5 +99,34 @@ describe("protectedProcedure", () => {
       await createTRPCContext({ headers: new Headers() }),
     );
     await expect(caller.whoami()).resolves.toBe("user_regular");
+  });
+});
+
+describe("adminProcedure", () => {
+  const testRouter = createTRPCRouter({
+    secret: adminProcedure.query(({ ctx }) => ctx.userId),
+  });
+  const createCaller = createCallerFactory(testRouter);
+
+  async function caller() {
+    return createCaller(await createTRPCContext({ headers: new Headers() }));
+  }
+
+  it("anonymous → UNAUTHORIZED (fails closed before the admin check)", async () => {
+    mockSession(null);
+    const result = await (await caller()).secret().catch((e: unknown) => e);
+    expect(result).toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("authenticated non-admin → FORBIDDEN", async () => {
+    mockSession("user_regular"); // ADMIN_USER_IDS unset ⇒ nobody is admin
+    const result = await (await caller()).secret().catch((e: unknown) => e);
+    expect(result).toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("admin listed in ADMIN_USER_IDS → passes through", async () => {
+    vi.stubEnv("ADMIN_USER_IDS", "user_admin");
+    mockSession("user_admin");
+    await expect((await caller()).secret()).resolves.toBe("user_admin");
   });
 });

@@ -54,3 +54,14 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   }
   return next();
 });
+
+// Admin moderation boundary (spec 009B): layered on protectedProcedure, so
+// anonymous callers fail UNAUTHORIZED first and authed non-admins fail
+// FORBIDDEN. isAdmin is session-derived in the context (never from input); an
+// empty ADMIN_USER_IDS means NO admins. No ctx override — same reason as above.
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!ctx.isAdmin) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  return next();
+});
