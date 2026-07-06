@@ -1,8 +1,10 @@
-// Task 4 (spec 009A): registration, not just existence — the Clerk proxy
-// (Next 16 renamed the middleware convention to proxy) must gate /submit and
-// /admin/** and run on the tRPC api path (so auth() is available to context),
-// and the layout must mount ClerkProvider inside <body>
-// (cache-components-safe placement, Clerk Core 3).
+// Task 4 (spec 009A) + Task 24 (spec 008): registration, not just existence —
+// the Clerk proxy (Next 16 renamed the middleware convention to proxy) must gate
+// /admin/** at the edge and run on the tRPC api path (so auth() is available to
+// context). /submit is NO LONGER edge-protected: it self-gates in-page (Task 24)
+// so its "Sign in to submit posts." gate is reachable, the submit mutation
+// (protectedProcedure) being the server-side boundary. The layout must mount
+// ClerkProvider inside <body> (cache-components-safe placement, Clerk Core 3).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -19,10 +21,11 @@ describe("clerk route protection (proxy)", () => {
     expect(middleware).toContain("createRouteMatcher");
   });
 
-  it("protects /submit and /admin/** via auth.protect", () => {
+  it("protects /admin/** via auth.protect but leaves /submit publicly reachable", () => {
     const middleware = read("src/proxy.ts");
-    expect(middleware).toContain('"/submit(.*)"');
     expect(middleware).toContain('"/admin(.*)"');
+    // /submit self-gates in-page (Task 24) — never edge-redirected
+    expect(middleware).not.toContain('"/submit(.*)"');
     expect(middleware).toMatch(/await\s+auth\.protect\(\)/);
   });
 

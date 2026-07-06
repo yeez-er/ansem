@@ -1,8 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Only /submit and /admin/** require a session (spec 009A) — every public
+// Only /admin/** redirects a signed-out visitor at the edge. /submit is
+// publicly reachable and self-gates in-page (spec 008, Task 24): its "Sign in
+// to submit posts." gate must be visible to signed-out visitors, and the submit
+// mutation (protectedProcedure) is the real server-side boundary. Every public
 // route must keep working with Clerk unreachable.
-const isProtectedRoute = createRouteMatcher(["/submit(.*)", "/admin(.*)"]);
+const isProtectedRoute = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
