@@ -518,6 +518,7 @@ Walkthrough:
   - Cron fallback documented + proven: manual `curl -H "Authorization: Bearer $CRON_SECRET"` against both cron routes works locally (documented in `ralph/AGENTS.md`, verified by the route auth tests)
 - **Test strategy**: integration tests with a poisoned `DATABASE_URL` (typed failure, no crash-loop); source verification that AGENTS.md documents the manual-curl fallback.
 - **Files to modify**: `ralph/AGENTS.md` (verify rows accurate), error mapping in `src/server/db/index.ts` if needed.
+- **Progress (2026-07-07 — DONE)**: Fallback contracts verified + one real hardening. `src/server/db/index.ts` now attaches `pool.on("error", logPoolError)` — an IDLE pg-client error (Neon dropping a pooled connection / a network blip) was previously unhandled and node-postgres re-throws it as an uncaught exception that crashes the process; it's now logged as a structured `db.pool_error` line and swallowed, proven dual-layer: a CONTROL test shows a fresh Pool with zero `error` listeners re-throws an emitted idle error, the real exported `logPoolError` neutralizes it, and source verification pins the wiring so it can't be silently dropped. Poisoned-`DATABASE_URL` integration test: `getDb()` running `select 1` against `127.0.0.1:9` rejects with a CATCHABLE Error whose `.cause.code === "ECONNREFUSED"` (captured via `.catch(e=>e)`, never a vacuous negative) — a readable typed error, no unhandled rejection; env.ts's format gate accepts the valid-but-unreachable URL, documenting that reachability is a runtime concern (boot fast-fail on a MALFORMED url stays `env.test.ts`, seed-CLI exit-1 stays `seed.test.ts` — not duplicated). `ralph/AGENTS.md` gains a "Cron (manual trigger / fallback)" section with the explicit bearer-auth `curl` for BOTH cron routes; source verification pins that every documented cron path is registered in `vercel.json` (doc ⊆ reality) and that the Neon/Vercel-Cron External Services rows name the real env vars (`DATABASE_URL`/`CRON_SECRET`) present in `src/env.ts`. 10 new tests (`src/tests/db-cron-fallback.test.ts`); typecheck/lint/build clean.
 
 ### Task 29: External-service fallback verification — Clerk
 
@@ -633,7 +634,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 25: adminProcedure + admin router
 - [x] Task 26: Admin pending queue UI
 - [x] Task 27: Admin creators UI
-- [ ] Task 28: Fallback verify: Neon + Vercel Cron
+- [x] Task 28: Fallback verify: Neon + Vercel Cron
 - [ ] Task 29: Fallback verify: Clerk
 - [ ] Task 30: Fallback verify: X API + metrics providers
 - [ ] Task 31: Full e2e journey + validation chain

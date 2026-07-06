@@ -35,6 +35,15 @@ pnpm db:migrate    # apply migrations
 pnpm db:push       # dev-only schema push
 ```
 
+## Cron (manual trigger / fallback)
+
+Vercel Cron runs these on schedule; trigger by hand with the bearer secret (GET or POST; wrong/missing secret → 401).
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/refresh-metrics
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/discover-x
+```
+
 ## External Services
 
 | Service                                              | Purpose                                       | Dev Fallback                                | Env Var                                                 |
