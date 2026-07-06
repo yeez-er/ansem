@@ -56,7 +56,7 @@ run_claude() {
     claude -p \
         --dangerously-skip-permissions \
         --output-format=stream-json \
-        --model "${RALPH_MODEL:-claude-fable-5}" \
+        --model "${RALPH_MODEL:-opus[1m]}" \
         --verbose 2>&1 | tee -a "$SESSION_LOG"
 }
 
@@ -75,7 +75,7 @@ run_claude_interactive() {
     echo "  Grant Accessibility + Screen Recording if prompted."
     echo "═══════════════════════════════════════════════════"
     echo ""
-    claude --model "${RALPH_MODEL:-claude-fable-5}" "$(cat "$prompt_file")"
+    claude --model "${RALPH_MODEL:-opus[1m]}" "$(cat "$prompt_file")"
 }
 
 invoke_prompt() {
@@ -396,7 +396,7 @@ SESSION_COST=0
     echo "Ralph Wiggum Loop v13"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Mode:   $MODE"
-    echo "Model:  fable (Fable 5, user-default effort: max)"
+    echo "Model:  ${RALPH_MODEL:-opus[1m]} (Opus 4.8, 1M context)"
     echo "Prompt: $PROMPT_FILE"
     echo "Branch: $CURRENT_BRANCH"
     echo "Log:    $SESSION_LOG"
