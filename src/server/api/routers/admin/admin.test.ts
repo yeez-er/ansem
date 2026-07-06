@@ -3,12 +3,15 @@
 // Covers the adminProcedure boundary (FORBIDDEN for authed non-admins,
 // UNAUTHORIZED for anonymous), reviewPost (pending → approved/rejected, the
 // atomic status gate → PRECONDITION_FAILED on re-review, NOT_FOUND on a missing
-// post, board visibility through the real query layer), and banCreator
-// (is_banned + same-transaction bulk-reject of pending posts, a
-// distinct-transaction ban/approve race, board hiding, and unban). Every
-// mutation emits one structured audit line (no audit table in v1 — captured
-// via a console.info spy).
-import { eq } from "drizzle-orm";
+// post, board visibility through the real query layer), banCreator (is_banned +
+// same-transaction bulk-reject of pending posts, a distinct-transaction
+// ban/approve race, board hiding, and unban), pendingPosts (FIFO moderation
+// queue, oldest-first, non-pending excluded), and refreshPost (single-post
+// refresh through the provider registry reusing Task 13's applyPostResult;
+// success writes a snapshot + denorm, provider outcomes map to typed errors).
+// Every mutation emits one structured audit line (no audit table in v1 —
+// captured via a console.info spy).
+import { count, eq } from "drizzle-orm";
 import {
   afterAll,
   afterEach,
@@ -19,16 +22,23 @@ import {
   it,
   vi,
 } from "vitest";
+import type { Platform } from "@/lib/post-url";
 import { appRouter } from "@/server/api/root";
 import { createCallerFactory, type TRPCContext } from "@/server/api/trpc";
 import { alltimeBoard } from "@/server/db/queries/leaderboard";
-import { creators, posts } from "@/server/db/schema";
+import { creators, metricSnapshots, posts } from "@/server/db/schema";
+import type {
+  MetricsProvider,
+  MetricsResult,
+  PostMetrics,
+} from "@/server/metrics/provider";
 import { makeSeeders } from "@/tests/helpers/seed";
 import {
   connectTestDb,
   migrateFresh,
   truncateAll,
 } from "@/tests/helpers/test-db";
+import { refreshSinglePost } from "./refresh-post";
 
 const testDb = connectTestDb();
 const { db } = testDb;
@@ -73,6 +83,55 @@ async function isBanned(creatorId: string) {
     .from(creators)
     .where(eq(creators.id, creatorId));
   return row?.isBanned;
+}
+
+async function snapshotCount(postId: string) {
+  const [row] = await db
+    .select({ c: count() })
+    .from(metricSnapshots)
+    .where(eq(metricSnapshots.postId, postId));
+  return Number(row?.c ?? 0);
+}
+
+// The deterministic mock provider never returns an error, so the RATE_LIMITED /
+// NOT_FOUND / PROVIDER_ERROR branches are driven by injecting a provider into
+// refreshSinglePost directly.
+function fakeProvider(
+  platform: Platform,
+  perId: MetricsResult,
+): MetricsProvider {
+  return {
+    platform,
+    async fetchMetrics(refs) {
+      const map = new Map<string, MetricsResult>();
+      for (const ref of refs) map.set(ref.platformPostId, perId);
+      return map;
+    },
+  };
+}
+
+const emptyProvider = (platform: Platform): MetricsProvider => ({
+  platform,
+  async fetchMetrics() {
+    return new Map<string, MetricsResult>();
+  },
+});
+
+function okMetrics(overrides: Partial<PostMetrics> = {}): PostMetrics {
+  return {
+    views: 12_000n,
+    likes: 300n,
+    comments: 40n,
+    shares: 12n,
+    capturedAt: new Date("2026-07-05T00:00:00Z"),
+    postedAt: new Date("2026-06-01T00:00:00Z"),
+    // null author never triggers the placeholder merge (creator handles seeded
+    // here are non-placeholder anyway) — keeps the refresh assertions isolated.
+    authorHandle: null,
+    authorDisplayName: null,
+    authorAvatarUrl: null,
+    ...overrides,
+  };
 }
 
 type AuditLine = {
@@ -125,12 +184,21 @@ describe("adminProcedure boundary", () => {
     const ban = await asAnon()
       .admin.banCreator({ creatorId: creator.id, banned: true })
       .catch((e: unknown) => e);
+    const pending = await asAnon()
+      .admin.pendingPosts()
+      .catch((e: unknown) => e);
+    const refresh = await asAnon()
+      .admin.refreshPost({ postId: post.id })
+      .catch((e: unknown) => e);
 
     expect(review).toMatchObject({ code: "UNAUTHORIZED" });
     expect(ban).toMatchObject({ code: "UNAUTHORIZED" });
+    expect(pending).toMatchObject({ code: "UNAUTHORIZED" });
+    expect(refresh).toMatchObject({ code: "UNAUTHORIZED" });
     // fails closed: nothing mutated
     expect(await statusOf(post.id)).toBe("pending");
     expect(await isBanned(creator.id)).toBe(false);
+    expect(await snapshotCount(post.id)).toBe(0);
   });
 
   it("authenticated non-admin → FORBIDDEN on every admin mutation", async () => {
@@ -143,11 +211,20 @@ describe("adminProcedure boundary", () => {
     const ban = await asUser()
       .admin.banCreator({ creatorId: creator.id, banned: true })
       .catch((e: unknown) => e);
+    const pending = await asUser()
+      .admin.pendingPosts()
+      .catch((e: unknown) => e);
+    const refresh = await asUser()
+      .admin.refreshPost({ postId: post.id })
+      .catch((e: unknown) => e);
 
     expect(review).toMatchObject({ code: "FORBIDDEN" });
     expect(ban).toMatchObject({ code: "FORBIDDEN" });
+    expect(pending).toMatchObject({ code: "FORBIDDEN" });
+    expect(refresh).toMatchObject({ code: "FORBIDDEN" });
     expect(await statusOf(post.id)).toBe("pending");
     expect(await isBanned(creator.id)).toBe(false);
+    expect(await snapshotCount(post.id)).toBe(0);
   });
 });
 
@@ -342,5 +419,176 @@ describe("banCreator", () => {
     // regardless of who won the row, a banned creator is hidden from the board
     const ids = (await alltimeBoard(db)).entries.map((e) => e.creator.id);
     expect(ids).not.toContain(creator.id);
+  });
+});
+
+describe("pendingPosts", () => {
+  it("returns pending posts oldest-first with submitter + creator, excluding every non-pending status", async () => {
+    const alpha = await seedCreator({ handle: "alpha", displayName: "Alpha" });
+    const beta = await seedCreator({ handle: "beta" });
+    // Insert newer BEFORE older so the ordering can't pass by insertion order.
+    const newer = await seedPost(beta.id, {
+      status: "pending",
+      submittedByUserId: "user_2",
+      createdAt: new Date("2026-07-03T00:00:00Z"),
+    });
+    const older = await seedPost(alpha.id, {
+      status: "pending",
+      submittedByUserId: "user_1",
+      createdAt: new Date("2026-07-01T00:00:00Z"),
+    });
+    // None of these may appear.
+    await seedPost(alpha.id, { status: "approved", ...OBSERVED });
+    await seedPost(alpha.id, { status: "rejected" });
+    await seedPost(alpha.id, { status: "removed" });
+
+    const queue = await asAdmin().admin.pendingPosts();
+
+    expect(queue.map((p) => p.id)).toEqual([older.id, newer.id]);
+    expect(queue[0]).toMatchObject({
+      id: older.id,
+      platform: "x",
+      url: older.url,
+      submittedByUserId: "user_1",
+      creator: { id: alpha.id, handle: "alpha", displayName: "Alpha" },
+    });
+    expect(queue[0]?.submittedAt).toBeInstanceOf(Date);
+  });
+
+  it("empty queue → [] (a list is a list)", async () => {
+    expect(await asAdmin().admin.pendingPosts()).toEqual([]);
+  });
+});
+
+describe("refreshPost", () => {
+  it("writes a snapshot via the provider registry, updates the denorm, returns it, and audits (real mock provider)", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+
+    const result = await asAdmin().admin.refreshPost({ postId: post.id });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("expected a successful refresh");
+    expect(typeof result.snapshot.views).toBe("bigint");
+    expect(result.snapshot.views).toBeGreaterThan(0n);
+    // A real snapshot row was written and the post's denorm reflects it.
+    expect(await snapshotCount(post.id)).toBe(1);
+    const [row] = await db
+      .select({
+        latestViews: posts.latestViews,
+        latestSnapshotAt: posts.latestSnapshotAt,
+      })
+      .from(posts)
+      .where(eq(posts.id, post.id));
+    expect(row?.latestViews).toBe(result.snapshot.views);
+    expect(row?.latestSnapshotAt).toBeInstanceOf(Date);
+    expect(auditLines(infoSpy)).toContainEqual({
+      event: "admin.audit",
+      actor: "user_admin",
+      action: "post.refreshed",
+      target: post.id,
+    });
+  });
+
+  it("refreshing a nonexistent post → NOT_FOUND", async () => {
+    const result = await asAdmin()
+      .admin.refreshPost({ postId: "00000000-0000-0000-0000-000000000000" })
+      .catch((e: unknown) => e);
+    expect(result).toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("a malformed postId → BAD_REQUEST (zod), never a DB hit", async () => {
+    const result = await asAdmin()
+      .admin.refreshPost({ postId: "not-a-uuid" })
+      .catch((e: unknown) => e);
+    expect(result).toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("provider ok result → returns exactly those metrics and writes them (injected, bigint-exact)", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+    // > 2^53 proves the count survives the write path without Number collapse.
+    const metrics = okMetrics({ views: 9_007_199_254_740_993n });
+
+    const result = await refreshSinglePost(db, post.id, () =>
+      fakeProvider("x", { ok: true, metrics }),
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      snapshot: {
+        postId: post.id,
+        views: metrics.views,
+        likes: metrics.likes,
+        comments: metrics.comments,
+        shares: metrics.shares,
+        capturedAt: metrics.capturedAt,
+      },
+    });
+    expect(await snapshotCount(post.id)).toBe(1);
+  });
+
+  it("provider RATE_LIMITED → { ok:false, error:'RATE_LIMITED' }, no snapshot, status unchanged", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+
+    const result = await refreshSinglePost(db, post.id, () =>
+      fakeProvider("x", { ok: false, error: "RATE_LIMITED", retryable: true }),
+    );
+
+    expect(result).toEqual({ ok: false, error: "RATE_LIMITED" });
+    expect(await snapshotCount(post.id)).toBe(0);
+    expect(await statusOf(post.id)).toBe("approved");
+  });
+
+  it("provider NOT_FOUND → { ok:false, error:'NOT_FOUND' }, post marked removed, no snapshot", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+
+    const result = await refreshSinglePost(db, post.id, () =>
+      fakeProvider("x", { ok: false, error: "NOT_FOUND", retryable: false }),
+    );
+
+    expect(result).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(await statusOf(post.id)).toBe("removed");
+    expect(await snapshotCount(post.id)).toBe(0);
+  });
+
+  it("provider PROVIDER_ERROR → { ok:false, error:'PROVIDER_ERROR' }, no snapshot", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+
+    const result = await refreshSinglePost(db, post.id, () =>
+      fakeProvider("x", {
+        ok: false,
+        error: "PROVIDER_ERROR",
+        retryable: true,
+      }),
+    );
+
+    expect(result).toEqual({ ok: false, error: "PROVIDER_ERROR" });
+    expect(await snapshotCount(post.id)).toBe(0);
+  });
+
+  it("post absent from the provider map → PROVIDER_ERROR (contract violation, never guessed)", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+
+    const result = await refreshSinglePost(db, post.id, () =>
+      emptyProvider("x"),
+    );
+
+    expect(result).toEqual({ ok: false, error: "PROVIDER_ERROR" });
+    expect(await snapshotCount(post.id)).toBe(0);
+  });
+
+  it("unconfigured platform (null provider) → PROVIDER_ERROR, never a silent success", async () => {
+    const creator = await seedCreator();
+    const post = await seedPost(creator.id, { status: "approved" });
+
+    const result = await refreshSinglePost(db, post.id, () => null);
+
+    expect(result).toEqual({ ok: false, error: "PROVIDER_ERROR" });
+    expect(await snapshotCount(post.id)).toBe(0);
   });
 });

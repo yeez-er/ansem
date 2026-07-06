@@ -1,7 +1,12 @@
 import { createTRPCRouter } from "@/server/api/trpc";
 import { banCreator } from "./ban-creator";
+import { pendingPosts } from "./pending-posts";
+import { refreshPost } from "./refresh-post";
 import { reviewPost } from "./review-post";
 
-// pendingPosts + refreshPost land in the next iteration (scoped per the build
-// loop's "utility + 2 critical consumers" rule).
-export const adminRouter = createTRPCRouter({ reviewPost, banCreator });
+export const adminRouter = createTRPCRouter({
+  pendingPosts,
+  reviewPost,
+  banCreator,
+  refreshPost,
+});
