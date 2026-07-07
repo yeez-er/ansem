@@ -252,3 +252,11 @@ Template:
 
 - Iterations 1, 4, 5 on `main`: gitleaks flagged `sk_test_placeholder`-shaped Clerk placeholder values in `.env.example` (the default `stripe-access-token` rule matches the shared `sk_test_` prefix). **False positives** — the file holds intentional documentation placeholders; real secrets live only in gitignored `.env.local` (verified untracked).
 - **Resolution**: `.gitleaks.toml` extends the default ruleset and allowlists only `.env.example`; `gitleaks git -c .gitleaks.toml` now reports 0 findings across all commits. The held pushes were carried to origin by iteration 6's clean push (verified: `main` = `origin/main`).
+
+## Security Gate Hold (auto-appended 2026-07-07) — RESOLVED 2026-07-07
+
+- Iteration 8 on `main`: gitleaks/npm-audit findings — push and tag withheld. See .ralph-logs/session-20260707-024634.log. Later iterations (9, 10) carried all commits to origin, but the underlying gate findings were deferred, not fixed.
+- **Findings triaged 2026-07-07 (post-build)**:
+  - **gitleaks: 3 findings — all false positives.** `sk_live_placeholder` (IMPLEMENTATION_PLAN.md) and `sk_test_placeholder` (KNOWN_ISSUES.md) are literal documentation placeholders; `0123456789abcdef0123456789abcdef` (`src/lib/cron-auth.test.ts`) is a deterministic test fixture. No real secret is committed.
+  - **npm audit: 1 moderate — real.** `postcss <8.5.10` XSS (GHSA-qx2v-qp2m-jg93), transitive via `next`. Low practical risk here (build-time CSS only, no untrusted-CSS runtime path), but patched anyway.
+- **Resolution**: `.gitleaks.toml` allowlist extended with precise regexes for the two placeholder literals and the test fixture (real `sk_live_`/`sk_test_` keys still trip the rule) → `gitleaks git -c .gitleaks.toml` now reports **0**. `package.json` `pnpm.overrides` pins `postcss >=8.5.10` (resolved 8.5.16) → `pnpm audit --prod` reports **no known vulnerabilities**. Both verified locally 2026-07-07.

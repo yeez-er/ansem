@@ -7,5 +7,13 @@
 useDefault = true
 
 [allowlist]
-description = "Documentation placeholder values in the env template"
+description = "Documentation placeholders + test fixtures (verified non-secret 2026-07-07)"
 paths = ['''\.env\.example$''']
+regexes = [
+  # Literal placeholder tokens referenced in docs (IMPLEMENTATION_PLAN.md, KNOWN_ISSUES.md).
+  # The stripe-access-token rule matches the sk_test_/sk_live_ prefix Clerk keys share;
+  # only the literal ".._placeholder" forms are allowlisted, so real keys still trip.
+  '''sk_(test|live)_placeholder''',
+  # Deterministic 32-hex CRON_SECRET fixture in src/lib/cron-auth.test.ts (not a real secret).
+  '''0123456789abcdef0123456789abcdef''',
+]
