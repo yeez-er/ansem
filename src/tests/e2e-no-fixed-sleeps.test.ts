@@ -7,10 +7,10 @@
 // every e2e spec. Dual-layer per the "control-test your matcher" rule: prove
 // the matcher fires on a deliberately-bad line before trusting the clean sweep.
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { walkFiles } from "@/tests/helpers/source-tree";
 
 const E2E_DIR = fileURLToPath(new URL("../../e2e", import.meta.url));
 // Playwright writes its HTML report + traces into these dirs (gitignored
@@ -20,16 +20,6 @@ const ARTIFACT_DIRS = new Set(["report", "test-results"]);
 // A fixed delay: Playwright's own `waitForTimeout`, or a bare timer/sleep used
 // as a pause. Real waits use expect.poll / waitForURL / toBeVisible instead.
 const FIXED_SLEEP = /waitForTimeout|\bsleep\s*\(|\bsetTimeout\s*\(/;
-
-const walkE2eSpecs = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((dirent) => {
-    if (dirent.isDirectory()) {
-      return ARTIFACT_DIRS.has(dirent.name)
-        ? []
-        : walkE2eSpecs(join(dir, dirent.name));
-    }
-    return /\.(ts|tsx)$/.test(dirent.name) ? [join(dir, dirent.name)] : [];
-  });
 
 describe("e2e specs contain no fixed sleeps", () => {
   it("bans waitForTimeout / setTimeout / sleep across every e2e spec (control-tested)", () => {
@@ -45,7 +35,7 @@ describe("e2e specs contain no fixed sleeps", () => {
       false,
     );
 
-    const specs = walkE2eSpecs(E2E_DIR);
+    const specs = walkFiles(E2E_DIR, { skipDirs: ARTIFACT_DIRS });
     // control: the sweep actually found spec files to scan.
     expect(specs.length).toBeGreaterThan(0);
 
