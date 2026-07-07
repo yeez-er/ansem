@@ -46,13 +46,13 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
 
 ## External Services
 
-| Service                                              | Purpose                                       | Dev Fallback                                | Env Var                                                 |
-| ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
-| Neon Postgres                                        | Primary DB                                    | Local/branch DATABASE_URL                   | `DATABASE_URL`                                          |
-| Clerk                                                | Auth (submit + admin only)                    | Clerk test-mode keys                        | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` |
-| X API v2                                             | Optional: metrics + discovery (specs 003/005) | Feature OFF when unset; MockMetricsProvider | `X_BEARER_TOKEN`                                        |
-| Metrics data provider (TBD — owner decision pending) | TikTok/IG public post metrics (spec 003)      | `METRICS_PROVIDER=mock` (deterministic)     | `THIRDPARTY_API_KEY`                                    |
-| Vercel Cron                                          | Scheduled ingestion (specs 004/005)           | Manual `curl` with bearer secret            | `CRON_SECRET`                                           |
+| Service                                    | Purpose                                                                | Dev Fallback                                | Env Var                                                 |
+| ------------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| Neon Postgres                              | Primary DB                                                             | Local/branch DATABASE_URL                   | `DATABASE_URL`                                          |
+| Clerk                                      | Auth (submit + admin only)                                             | Clerk test-mode keys                        | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` |
+| X API v2                                   | Optional: metrics + discovery (specs 003/005)                          | Feature OFF when unset; MockMetricsProvider | `X_BEARER_TOKEN`                                        |
+| SocialData (X refresh) + Apify (TikTok/IG) | Public post metrics — X via SocialData, TikTok/IG via Apify (spec 003) | `METRICS_PROVIDER=mock` (deterministic)     | `SOCIALDATA_API_KEY`, `APIFY_TOKEN`                     |
+| Vercel Cron                                | Scheduled ingestion (specs 004/005)                                    | Manual `curl` with bearer secret            | `CRON_SECRET`                                           |
 
 ## Database Enums
 

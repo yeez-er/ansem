@@ -540,6 +540,7 @@ Walkthrough:
   - `ralph/AGENTS.md` External Services table matches reality (env var names, fallbacks) — source verification
 - **Test strategy**: integration test matrix over env configurations; source verification of the AGENTS.md table against `src/env.ts` keys.
 - **Files to modify**: `ralph/AGENTS.md` (update Metrics row from "TBD" to SocialData/Apify decided vendors + `SOCIALDATA_API_KEY`/`APIFY_TOKEN`).
+- **Progress (2026-07-07 — DONE)**: Verification confirmed all four fallback contracts hold — the only source change was correcting the stale AGENTS.md row (no behavior gaps, as scoped). New `src/tests/metrics-provider-fallback.test.ts` (20 tests) exercises each contract through the REAL registry/orchestration, never a stand-in: (1) dev fallback is real — `getProvider` with every provider key absent + `isProduction:false` returns `MockMetricsProvider` for x/tiktok/instagram, its `fetchMetrics` yields deterministic non-zero metrics (never rejects), and a full `refreshMetrics(db, {providerFor: no-keys dev registry})` pass writes 3 snapshots the `alltimeBoard` reads back with every score > 0n; (2) production skip — same no-keys env at `isProduction:true` → `null` per platform (never mock), ingestion counts them `skipped` with EXACTLY one structured `refresh_metrics.unconfigured_platforms` warn, each post keeps `latestSnapshotAt: null` (the UI "— pending" em-dash, render owned by the UI suites) and the board excludes them (no fabricated zeros); (3) `X_BEARER_TOKEN` unset → `clientFromEnv` null + X metrics provider unregistered (`getProvider("x")` prod → null) + `discoverX(db, {enabled:true, client:null})` resolves `{skipped:true}` (captured via `.catch`, never crashes). (4) `ralph/AGENTS.md` Metrics row rewritten "SocialData (X refresh) + Apify (TikTok/IG)" naming `SOCIALDATA_API_KEY`/`APIFY_TOKEN`, dropping the stale `THIRDPARTY_API_KEY`/"owner decision pending" placeholder; source verification pins the vendors + env vars present in AGENTS.md AND `src/env.ts` (doc ⊆ reality) with a control test proving the stale-marker matcher fires. Sibling coverage NOT duplicated (provider.test.ts's 27-combo prod-never-mock sweep, recent-posts/creator em-dash render, discover-x.test.ts gating matrix). Full suite 884/884 green; typecheck/lint/build clean.
 
 ### Task 31: Full-suite e2e walkthrough + validation-chain gate
 
@@ -637,7 +638,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 27: Admin creators UI
 - [x] Task 28: Fallback verify: Neon + Vercel Cron
 - [x] Task 29: Fallback verify: Clerk
-- [ ] Task 30: Fallback verify: X API + metrics providers
+- [x] Task 30: Fallback verify: X API + metrics providers
 - [ ] Task 31: Full e2e journey + validation chain
 - [ ] Task 32: Coverage + dead-code + contract audit
 - [ ] Task 33: Deploy readiness
