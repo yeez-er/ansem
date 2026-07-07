@@ -573,6 +573,7 @@ Walkthrough:
   - `ralph/AGENTS.md` validation chain + seed command verified runnable end-to-end on a fresh clone
 - **Test strategy**: source verification (cron entries, env superset); manual-runbook doc check.
 - **Files to modify**: `vercel.json`, `.env.example`, `ralph/AGENTS.md`.
+- **Progress (2026-07-07 — DONE)**: Deploy-readiness verified; the only file change was adding the X-discovery pre-enable checklist to `ralph/AGENTS.md` (the two config files were already correct — `vercel.json` carries both cron entries with exact paths since Tasks 14/16, and `.env.example` already documents every `src/env.ts` var, superset test still green). New `ralph/AGENTS.md` "X Discovery — Pre-Enable Checklist" section: set the X console **spend cap** FIRST (the only hard ceiling on pay-per-use reads), then `X_BEARER_TOKEN`/`X_DISCOVERY_PAGES_PER_RUN`, then smoke-test the `$ANSEM` cashtag and fall back via `X_SEARCH_QUERY` → `FALLBACK_X_SEARCH_QUERY` if rejected, and ONLY THEN `X_DISCOVERY_ENABLED=true`. New `src/tests/deploy-readiness.test.ts` (16 tests) owns ONLY what no sibling suite owns: (1) the checklist pins — a CONTROL that the runbook section exists, spend-cap documented BEFORE the `X_DISCOVERY_ENABLED=true` step (index-ordering assertion, not mere co-presence), the cashtag→quoted-keyword fallback via `X_SEARCH_QUERY`, and a doc⊆code tie that `FALLBACK_X_SEARCH_QUERY` is a real distinct exported query; (2) every `pnpm <script>` command documented in AGENTS.md resolves to a package.json script or a pnpm builtin (the "verify every documented command is runnable" nomination — a fresh-clone operator never hits a missing script), with a control test proving the extraction regex fires. Deliberately NOT duplicated: exact cron paths+schedules (cron-*-route.test.ts), `.env.example ⊇ src/env.ts` (env.test.ts superset), manual-curl fallback wording (db-cron-fallback.test.ts). Sibling suites re-run green (env + db-cron-fallback + metrics-provider-fallback 65/65); typecheck/lint clean. Task 33 complete — plan fully implemented (33/33).
 
 ---
 
@@ -643,4 +644,4 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 30: Fallback verify: X API + metrics providers
 - [x] Task 31: Full e2e journey + validation chain
 - [x] Task 32: Coverage + dead-code + contract audit
-- [ ] Task 33: Deploy readiness
+- [x] Task 33: Deploy readiness

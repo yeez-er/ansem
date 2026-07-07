@@ -44,6 +44,15 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
 curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/discover-x
 ```
 
+## X Discovery — Pre-Enable Checklist (spec 005)
+
+Recent-search reads are pay-per-use ($5/1k); the X console **spend cap** is the only hard ceiling. Do these IN ORDER before turning discovery on:
+
+1. Set a **spend cap** in the X developer console — set it FIRST, it is the ceiling a viral spike cannot exceed.
+2. Set `X_BEARER_TOKEN`, and (optionally) `X_DISCOVERY_PAGES_PER_RUN` (default 3 pages/run — the per-run read bound).
+3. Smoke-test the `$ANSEM` cashtag query. If X rejects the cashtag operator, set `X_SEARCH_QUERY` to the quoted-keyword fallback (`FALLBACK_X_SEARCH_QUERY` in `src/server/discovery/discover-x.ts`).
+4. ONLY THEN set `X_DISCOVERY_ENABLED=true`. Until it is exactly `"true"` AND a bearer token is set, discovery is off and makes zero X calls.
+
 ## External Services
 
 | Service                                    | Purpose                                                                | Dev Fallback                                | Env Var                                                 |
