@@ -528,6 +528,7 @@ Walkthrough:
   - Clerk outage path: public board (`/`, `/creator/[id]`) renders fully with Clerk unreachable (auth gates only `/submit` + `/admin`); a mocked Clerk failure on `/submit` shows the friendly gate/error, not a crash
 - **Test strategy**: e2e config source verification (testing tokens); integration test with mocked Clerk client failure.
 - **Files to modify**: none expected — verification task; fixes filed if gaps found.
+- **Progress (2026-07-07 — DONE)**: Verification confirmed both fallback contracts hold — no source gaps, so no fixes needed (as scoped). New `src/tests/clerk-fallback.test.ts` (10 tests, every matcher control-tested to stay non-vacuous) closes the three previously-untested criteria: (1) `.env.example` documents the Clerk keys AND the `pk_test_/sk_test_` test-mode swap-in (dev fallback), control-tested against a stripped file; (2) the edge proxy gates ONLY `/admin` — the `createRouteMatcher([...])` argument is extracted (so the assertion targets the protected list, not `config.matcher`'s legitimate `/`) and asserted to never match `submit`/`creator`, with a control test proving the extractor WOULD catch a re-added `/submit` gate; (3) a thrown `auth()` degrades through the REAL `createTRPCContext` + caller — a `publicProcedure` (board reads) still resolves while a `protectedProcedure` (submit mutation) maps to a typed `UNAUTHORIZED` (captured via `.catch(e=>e)`, never vacuous), so the public board survives a Clerk outage and the submit path fails closed instead of crashing. Criterion "e2e runs on testing tokens" already fully covered by `auth-pages.test.ts` (devDep + globalSetup + `clerkSetup`) and the context-degrades-to-signed-out field check by `auth.test.ts` — deliberately not duplicated; this suite adds only the behavioral through-a-caller degradation, the public-route-never-gated extraction, and the `.env.example` doc pin. Full suite 864/864; typecheck/lint clean.
 
 ### Task 30: External-service fallback verification — X API + metrics providers (SocialData/Apify/mock)
 
@@ -635,7 +636,7 @@ Spec-mandated constraints honored: 000 → 009A (Task 4) → 002 (Tasks 5–6) �
 - [x] Task 26: Admin pending queue UI
 - [x] Task 27: Admin creators UI
 - [x] Task 28: Fallback verify: Neon + Vercel Cron
-- [ ] Task 29: Fallback verify: Clerk
+- [x] Task 29: Fallback verify: Clerk
 - [ ] Task 30: Fallback verify: X API + metrics providers
 - [ ] Task 31: Full e2e journey + validation chain
 - [ ] Task 32: Coverage + dead-code + contract audit
