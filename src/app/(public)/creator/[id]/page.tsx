@@ -56,7 +56,7 @@ function PostRow({ post }: { post: PublicPost }) {
       href={post.url}
       target="_blank"
       rel="noopener"
-      className={`${POSTS_GRID} rounded-lg bg-white/[0.03] py-3 transition-colors hover:bg-white/[0.07]`}
+      className={`${POSTS_GRID} rounded-lg border border-line bg-panel/50 py-3 transition-colors hover:border-accent-dim hover:bg-panel`}
     >
       <span className="truncate text-sm">{post.caption ?? "View post"}</span>
       {post.latestSnapshotAt === null ? (
@@ -68,7 +68,7 @@ function PostRow({ post }: { post: PublicPost }) {
         <>
           <StatNumber
             value={post.score}
-            className="text-right text-sm font-semibold text-accent"
+            className="text-right font-mono text-sm font-semibold text-accent text-glow"
           />
           <StatNumber value={post.views} className="text-right text-sm" />
           <StatNumber
@@ -153,11 +153,14 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {statTiles(alltime, daily).map(([tileLabel, value]) => (
-          <div key={tileLabel} className="rounded-lg bg-white/[0.03] px-4 py-3">
-            <dt className="text-xs uppercase tracking-wider text-foreground/50">
+          <div
+            key={tileLabel}
+            className="rounded-lg border border-line bg-panel/50 px-4 py-3"
+          >
+            <dt className="font-mono text-xs uppercase tracking-wider text-muted">
               {tileLabel}
             </dt>
-            <dd className="mt-1 text-xl font-semibold">
+            <dd className="mt-1 font-mono text-xl font-semibold">
               <StatNumber value={value} />
             </dd>
           </div>
@@ -166,7 +169,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
 
       <section aria-label="Posts" className="flex flex-col">
         <div
-          className={`${POSTS_GRID} py-2 text-xs uppercase tracking-wider text-foreground/50`}
+          className={`${POSTS_GRID} py-2 font-mono text-xs uppercase tracking-wider text-muted`}
         >
           <span>Post</span>
           <span className="text-right">Score</span>

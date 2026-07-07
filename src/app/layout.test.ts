@@ -23,9 +23,10 @@ const openingTag = (source: string, tag: string, attr: string) => {
 };
 
 describe("root layout — header", () => {
-  it("shows the brand with the bull glyph and the tagline", () => {
+  it("shows the brand with the bull logo image and the tagline", () => {
     expect(layout).toContain("$ANSEM · THE BLACK BULL");
-    expect(layout).toContain("🐂");
+    expect(layout).toContain('src="/bull.png"');
+    expect(layout).toContain('alt="$ANSEM black bull"');
     expect(layout).toContain("Post. Farm views. Climb.");
   });
 
@@ -87,8 +88,8 @@ describe("root layout — footer", () => {
 
 describe("globals.css — dark theme", () => {
   it("pins the near-black background and off-white foreground unconditionally", () => {
-    expect(css).toMatch(/--background:\s*#0a0a0a/);
-    expect(css).toMatch(/--foreground:\s*#ededed/);
+    expect(css).toMatch(/--background:\s*#050705/);
+    expect(css).toMatch(/--foreground:\s*#d7f2de/);
   });
 
   it("never swaps the theme on prefers-color-scheme (always dark)", () => {
@@ -104,12 +105,12 @@ describe("globals.css — dark theme", () => {
     expect(/--background:\s*#ffffff/.test(css)).toBe(false);
   });
 
-  it("exposes the bull-orange accent as a themed color", () => {
-    expect(css).toMatch(/--accent:\s*#f97316/);
+  it("exposes the arcade-green accent as a themed color", () => {
+    expect(css).toMatch(/--accent:\s*#4cf08a/);
     expect(css).toMatch(/--color-accent:\s*var\(--accent\)/);
   });
 
   it("defines the bull gradient utility with the exact spec stops", () => {
-    expect(css).toMatch(/@utility bull-gradient\s*{[^}]*#f97316[^}]*#dc2626/);
+    expect(css).toMatch(/@utility bull-gradient\s*{[^}]*#4cf08a[^}]*#2f8a57/);
   });
 });

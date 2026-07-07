@@ -1,6 +1,7 @@
 import { ClerkProvider, Show, SignInButton, UserButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import { ANSEM_MINT } from "@/lib/token";
@@ -36,27 +37,43 @@ export default function RootLayout({
         {/* inside <body>, not around <html>: required with cache components (Clerk Core 3) */}
         <ClerkProvider>
           <TRPCReactProvider>
-            <header className="border-b border-white/10">
+            <header className="border-b border-line">
               <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4">
-                <div>
-                  <Link
-                    href="/"
-                    className="text-lg font-bold uppercase tracking-tight"
-                  >
-                    <span aria-hidden="true">🐂</span> $ANSEM · THE BLACK BULL
-                  </Link>
-                  <p className="text-xs text-foreground/60">
-                    Post. Farm views. Climb.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/bull.png"
+                    alt="$ANSEM black bull"
+                    width={44}
+                    height={44}
+                    priority
+                    className="rounded-lg border border-accent-dim box-glow"
+                  />
+                  <div>
+                    <Link
+                      href="/"
+                      className="font-mono text-sm font-bold uppercase tracking-wide text-accent text-glow"
+                    >
+                      $ANSEM · THE BLACK BULL
+                    </Link>
+                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.28em] text-muted">
+                      Post. Farm views. Climb.
+                    </p>
+                  </div>
                 </div>
                 <nav
                   aria-label="Main"
-                  className="flex items-center gap-5 text-sm"
+                  className="flex items-center gap-4 font-mono text-xs uppercase tracking-wider"
                 >
-                  <Link href="/" className="hover:text-accent">
+                  <Link
+                    href="/"
+                    className="text-muted transition-colors hover:text-accent"
+                  >
                     Leaderboard
                   </Link>
-                  <Link href="/submit" className="hover:text-accent">
+                  <Link
+                    href="/submit"
+                    className="text-muted transition-colors hover:text-accent"
+                  >
                     Submit
                   </Link>
                   {/* Clerk v7: <Show> replaces <SignedIn>/<SignedOut> */}
@@ -64,7 +81,7 @@ export default function RootLayout({
                     <SignInButton>
                       <button
                         type="button"
-                        className="bull-gradient rounded-md px-3 py-1.5 font-semibold text-white"
+                        className="rounded-md bg-accent px-3 py-1.5 font-semibold uppercase tracking-wide text-background transition-colors hover:bg-accent-bright box-glow"
                       >
                         Sign in
                       </button>
@@ -74,14 +91,14 @@ export default function RootLayout({
               </div>
             </header>
             <main className="flex flex-1 flex-col">{children}</main>
-            <footer className="border-t border-white/10">
-              <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-6 text-xs text-foreground/60">
+            <footer className="border-t border-line">
+              <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-6 font-mono text-xs text-muted">
                 <div className="flex items-center gap-4">
                   <a
                     href="https://blackbullsol.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-accent"
+                    className="uppercase tracking-wider transition-colors hover:text-accent"
                   >
                     blackbullsol.com
                   </a>
@@ -89,18 +106,23 @@ export default function RootLayout({
                     href="https://x.com/blackbullsol"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-accent"
+                    className="uppercase tracking-wider transition-colors hover:text-accent"
                   >
                     @blackbullsol
                   </a>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <code className="break-all font-mono">{ANSEM_MINT}</code>
+                  <span className="text-[0.6rem] uppercase tracking-[0.2em] text-accent-dim">
+                    Mint
+                  </span>
+                  <code className="break-all text-accent">{ANSEM_MINT}</code>
                   <CopyButton
                     value={ANSEM_MINT}
                     label="Copy the $ANSEM mint address"
                   />
-                  <span>— the only real one</span>
+                  <span className="uppercase tracking-wider">
+                    — the only real one
+                  </span>
                 </div>
               </div>
             </footer>

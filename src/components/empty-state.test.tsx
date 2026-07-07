@@ -18,10 +18,11 @@ describe("EmptyState", () => {
     expect(screen.getByText(BOARD_COPY)).toBeTruthy();
   });
 
-  it("renders the bull glyph as decorative (aria-hidden)", () => {
-    render(<EmptyState message={BOARD_COPY} />);
-    const glyph = screen.getByText("🐂");
-    expect(glyph.getAttribute("aria-hidden")).toBe("true");
+  it("renders the bull mark as decorative (aria-hidden)", () => {
+    const { container } = render(<EmptyState message={BOARD_COPY} />);
+    const mark = container.querySelector("img");
+    expect(mark).not.toBeNull();
+    expect(mark?.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("renders the CTA as a link with the exact href", () => {

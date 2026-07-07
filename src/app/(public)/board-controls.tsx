@@ -29,9 +29,10 @@ const PLATFORMS: ReadonlyArray<[BoardPlatformFilter, string]> = [
   ["instagram", "Instagram"],
 ];
 
-const PILL_ACTIVE = "rounded-md bg-accent/15 px-3 py-1 font-medium text-accent";
+const PILL_ACTIVE =
+  "rounded-md bg-accent/15 px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-accent text-glow";
 const PILL_IDLE =
-  "rounded-md px-3 py-1 text-foreground/60 transition-colors hover:text-foreground";
+  "rounded-md px-3 py-1 font-mono text-xs uppercase tracking-wider text-muted transition-colors hover:text-accent";
 
 function PillLinks<T extends string>({
   label,
@@ -48,7 +49,7 @@ function PillLinks<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="flex w-fit gap-1 rounded-lg bg-white/[0.05] p-1 text-sm"
+      className="flex w-fit gap-1 rounded-lg border border-line bg-panel/60 p-1"
     >
       {options.map(([value, text]) => (
         <Link
@@ -78,7 +79,7 @@ function ResetCountdown() {
   }, []);
 
   return (
-    <p className="text-xs text-foreground/50">
+    <p className="font-mono text-[0.7rem] uppercase tracking-widest text-accent-dim">
       resets 00:00 UTC{remaining === null ? "" : ` · ${remaining}`}
     </p>
   );

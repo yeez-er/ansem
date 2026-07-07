@@ -14,7 +14,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
   if (posts.length === 0) return null;
   return (
     <aside aria-label="Recent posts">
-      <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-foreground/50">
+      <h2 className="px-1 font-mono text-xs font-semibold uppercase tracking-wider text-muted">
         Recent posts
       </h2>
       <ul className="mt-2 flex flex-col gap-2">
@@ -24,7 +24,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
               href={post.url}
               target="_blank"
               rel="noopener"
-              className="block rounded-lg bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.07]"
+              className="block rounded-lg border border-line bg-panel/50 px-4 py-3 transition-colors hover:border-accent-dim hover:bg-panel"
             >
               <span className="flex items-center gap-2">
                 <PlatformBadge platform={post.creator.platform} />

@@ -102,11 +102,11 @@ describe("LeaderboardTable", () => {
 
   it("gives ranks 1–3 decorative medals and later ranks none", () => {
     render(<LeaderboardTable entries={FOUR_RANKS} />);
-    for (const medal of ["🥇", "🥈", "🥉"]) {
+    for (const medal of ["👑", "🥈", "🥉"]) {
       expect(screen.getByText(medal).getAttribute("aria-hidden")).toBe("true");
     }
     const fourth = screen.getByRole("link", { name: /@fourth/ });
-    expect(fourth.textContent).not.toMatch(/🥇|🥈|🥉/);
+    expect(fourth.textContent).not.toMatch(/👑|🥈|🥉/);
   });
 
   it("wraps exactly the rank-1 row in the bull-gradient border", () => {

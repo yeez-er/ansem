@@ -115,13 +115,13 @@ export function SubmitForm() {
           placeholder="https://x.com/handle/status/…"
           value={url}
           onChange={(event) => setUrl(event.target.value)}
-          className="flex-1 rounded-md border border-white/15 bg-white/[0.05] px-3 py-2 text-sm outline-none focus:border-accent"
+          className="flex-1 rounded-md border border-line bg-panel px-3 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <button
         type="submit"
         disabled={!canSubmit}
-        className="bull-gradient w-fit rounded-md px-4 py-2 font-semibold text-white disabled:opacity-50"
+        className="bull-gradient w-fit rounded-md px-4 py-2 font-mono font-semibold uppercase tracking-wide text-background box-glow disabled:opacity-50"
       >
         {mutation.isPending ? "Submitting…" : "Submit post"}
       </button>

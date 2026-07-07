@@ -10,7 +10,7 @@ import { StatNumber } from "@/components/stat-number";
 import { creatorLabel } from "@/lib/creator-display";
 import type { PublicBoardEntry } from "@/server/api/routers/leaderboard/dto";
 
-const MEDALS: Partial<Record<number, string>> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+const MEDALS: Partial<Record<number, string>> = { 1: "👑", 2: "🥈", 3: "🥉" };
 
 const ROW_GRID =
   "grid grid-cols-[3.5rem_minmax(0,1fr)_repeat(5,4.5rem)_3.5rem] items-center gap-x-3 px-4";
@@ -21,9 +21,9 @@ function BoardRow({ entry }: { entry: PublicBoardEntry }) {
   const row = (
     <Link
       href={`/creator/${entry.creator.id}`}
-      className={`${ROW_GRID} rounded-lg bg-white/[0.03] py-3 transition-colors hover:bg-white/[0.07]`}
+      className={`${ROW_GRID} rounded-lg border border-line bg-panel/50 py-3 transition-colors hover:border-accent-dim hover:bg-panel`}
     >
-      <span className="flex items-center gap-1 tabular-nums text-foreground/70">
+      <span className="flex items-center gap-1 font-mono tabular-nums text-foreground/70">
         {medal === undefined ? null : <span aria-hidden="true">{medal}</span>}
         {entry.rank}
       </span>
@@ -34,7 +34,7 @@ function BoardRow({ entry }: { entry: PublicBoardEntry }) {
       </span>
       <StatNumber
         value={entry.score}
-        className="text-right font-semibold text-accent"
+        className="text-right font-mono font-semibold text-accent text-glow"
       />
       <StatNumber value={entry.views} className="text-right" />
       <StatNumber
@@ -49,7 +49,7 @@ function BoardRow({ entry }: { entry: PublicBoardEntry }) {
         value={entry.shares}
         className="text-right text-foreground/70"
       />
-      <span className="text-right tabular-nums text-foreground/70">
+      <span className="text-right font-mono tabular-nums text-foreground/70">
         {entry.postCount}
       </span>
     </Link>
@@ -72,7 +72,7 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
     <div className="overflow-x-auto">
       <div className="min-w-[44rem]">
         <div
-          className={`${ROW_GRID} py-2 text-xs uppercase tracking-wider text-foreground/50`}
+          className={`${ROW_GRID} py-2 font-mono text-xs uppercase tracking-wider text-muted`}
         >
           <span>Rank</span>
           <span>Creator</span>

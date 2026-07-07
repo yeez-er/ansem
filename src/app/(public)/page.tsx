@@ -78,6 +78,20 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
   return (
     <div className={CONTAINER}>
       <section className="flex flex-col gap-4">
+        <div className="rounded-xl border border-line bg-panel/50 px-5 py-5">
+          <p className="font-mono text-[0.6rem] uppercase tracking-[0.34em] text-accent-dim">
+            Insert post to play
+          </p>
+          <h1 className="mt-1 font-mono text-3xl font-bold uppercase tracking-wide text-accent-bright text-glow sm:text-4xl">
+            High Scores
+          </h1>
+          <p className="mt-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
+            Rank creators by real reach —{" "}
+            <span className="text-foreground">
+              views ×1 · likes ×30 · comments ×60 · shares ×90
+            </span>
+          </p>
+        </div>
         <BoardControls period={params.period} platform={params.platform} />
         {board.entries.length === 0 ? (
           <EmptyState
@@ -95,7 +109,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
               platform: params.platform,
               limit: grownLimit,
             })}
-            className="mx-auto w-fit rounded-md border border-white/15 px-4 py-2 text-sm text-foreground/80 transition-colors hover:border-accent hover:text-accent"
+            className="mx-auto w-fit rounded-md border border-line px-4 py-2 font-mono text-xs uppercase tracking-wider text-muted transition-colors hover:border-accent hover:text-accent"
           >
             Load more
           </Link>
